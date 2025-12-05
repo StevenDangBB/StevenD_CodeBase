@@ -1,0 +1,2619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISO Audit Assistant v11.01 (✨Gemini Powered)</title>
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // --- CUSTOM CSS KEYFRAMES (Animation for Logo Star) ---
+        
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: { 850: '#1e293b', 950: '#020617' },
+                        // Custom VIBE Colors
+                        'nc-major': '#dc2626', // Red-600
+                        'nc-minor': '#f59e0b', // Amber-500
+                        'ofi': '#4f46e5', // Indigo-600 (OLD: Indigo, NEW: Use Amber for visual hierarchy)
+                        'compliant-na': '#10b981', // Emerald-500
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['ui-monospace', 'monospace'],
+                    },
+                    animation: {
+                        'bounce-slight': 'bounce-slight 0.3s infinite alternate',
+                        'scan-line': 'scan 2s linear infinite',
+                        'brain-wave': 'brainWave 3s ease infinite',
+                        'spin-slow': 'spin 3s linear infinite',
+                        'sparkle-spin': 'spin 2s linear infinite',
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                        // NEW: Logo star orbit animation
+                        'star-orbit': 'starOrbit 6s linear infinite',
+                    },
+                    keyframes: {
+                        'bounce-slight': { '0%': { transform: 'translateY(0)' }, '100%': { transform: 'translateY(-2px)' } },
+                        scan: { '0%': { top: '-20%', opacity: '0' }, '50%': { opacity: '1' }, '100%': { top: '120%', opacity: '0' } },
+                        brainWave: {
+                            '0%': { backgroundPosition: '0% 50%' },
+                            '50%': { backgroundPosition: '100% 50%' },
+                            '100%': { backgroundPosition: '0% 50%' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        // NEW: Keyframes for star orbiting in the top-left corner
+                        starOrbit: {
+                             '0%': { transform: 'rotate(0deg) translateX(25px) translateY(-5px) scale(0.6) opacity(0.8)' },
+                             '25%': { transform: 'rotate(90deg) translateX(22px) translateY(-8px) scale(0.8) opacity(1)' },
+                             '50%': { transform: 'rotate(180deg) translateX(25px) translateY(-5px) scale(0.6) opacity(0.8)' },
+                             '75%': { transform: 'rotate(270deg) translateX(22px) translateY(-8px) scale(0.8) opacity(1)' },
+                             '100%': { transform: 'rotate(360deg) translateX(25px) translateY(-5px) scale(0.6) opacity(0.8)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- React & Babel -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* NEW: Biến CSS để điều chỉnh cỡ chữ tổng thể */
+        :root {
+            --font-scale: 1.0; /* Default scale */
+        }
+        /* Class chung để apply font-size động */
+        .text-adjustable {
+            font-size: calc(1rem * var(--font-scale)); 
+        }
+        .text-adjustable-sm {
+             font-size: calc(0.875rem * var(--font-scale)); 
+        }
+        .text-adjustable-xs {
+             font-size: calc(0.75rem * var(--font-scale)); 
+        }
+        /* NEW: Custom text-xl for Blocks 1, 2, 3 Headers */
+        /* Giảm kích thước từ 1.25rem (text-xl cũ) xuống 1.125rem (text-lg) */
+        .text-lg-custom {
+             font-size: 1.125rem; 
+        }
+        
+        /* Thanh cuộn Khung 2 (Kết quả): Loại bỏ padding-right để thẻ sát lề */
+        .results-scroll-container {
+            overflow-y: hidden !important; 
+            overflow-x: hidden;
+            height: 100%; 
+            padding-right: 0px; 
+            padding-bottom: 0px;
+        }
+        
+        /* FIX BLOCK 3: Class mới cho Report Container - KHÔNG ép buộc scroll ở container cha */
+        .report-container {
+            height: 100%;
+            width: 100%;
+            overflow: hidden; 
+            padding-right: 0; 
+            padding-bottom: 0;
+        }
+
+        /* DEFAULT SCROLLBAR: SỬA LỖI ĐỂ TĂNG TƯƠNG PHẢN CHO SCROLLBAR Y */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        /* Bỏ outline focus mặc định để dùng ring của tailwind */
+        input:focus, select:focus, textarea:focus { outline: none; }
+        
+        /* Infographic Steps Connector Line */
+        .step-connector { position: relative; }
+        .step-connector:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 24px; left: 50%; width: 100%; height: 2px;
+            background: #e2e8f0; z-index: 0;
+        }
+        .dark .step-connector:not(:last-child)::after { background: #334155; }
+
+        /* Brain Wave Button Effect */
+        .btn-brain-wave {
+            background: linear-gradient(270deg, #4f46e5, #8b5cf6, #ec4899, #4f46e5);
+            background-size: 300% 300%;
+            animation: brainWave 3s ease infinite;
+            /* Z-index: Nút ANALYZE giờ sẽ nằm trong container riêng, không cần z-index cao */
+            z-index: 1; 
+        }
+
+        /* SCROLL FIX: Strict Containment & No Anchor */
+        .clause-scroll-container {
+            overflow-y: auto;
+            overflow-anchor: none; 
+            overscroll-behavior: contain;
+            height: 100%;
+            flex: 1;
+            scroll-behavior: auto;
+        }
+        
+        /* Clause Styles - Ensure static layout */
+        .description-text {
+            display: block;
+            color: #64748b; 
+            position: relative; 
+        }
+        .dark .description-text { color: #94a3b8; } 
+        
+        /* New copy icon position */
+        .copy-icon-trigger {
+            position: absolute;
+            top: 2px;
+            right: 0px;
+            padding: 2px;
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+        .description-text:hover .copy-icon-trigger {
+            opacity: 1;
+        }
+        
+        /* Custom Flex Utilities for Layout Control */
+        .flex-auto-min {
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        /* FIX: Tiêu đề Block Content */
+        .block-title-content {
+            padding-top: 10px; 
+            padding-bottom: 10px;
+        }
+        
+        /* NEW ICON FOR MULTI-SELECT GROUP */
+        .group-select-icon {
+            transition: all 0.2s ease-in-out;
+        }
+        .group-select-icon.selected {
+            transform: scale(1.1);
+        }
+        
+        /* Resizable Splitter Styles */
+        .resize-handle {
+            height: 8px; 
+            cursor: ns-resize;
+            background: rgba(100, 116, 139, 0.2); 
+            transition: background-color 0.2s;
+        }
+        .resize-handle:hover {
+            background: rgba(99, 102, 241, 0.5); 
+        }
+        
+        /* Make sure the textareas themselves don't scroll inside the flexible container */
+        .flex-textarea {
+            resize: vertical; 
+            overflow-y: auto;
+            min-height: 120px; 
+            width: 100%; 
+            height: auto; 
+            background-color: transparent; 
+        }
+        
+        /* NEW: Custom select styling for Manual Override */
+        .custom-status-select {
+            appearance: none;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 700; 
+            transition: all 0.2s;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
+        .custom-status-select:hover {
+             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        
+        /* CSS FIXES for Dark Mode and Node Bar */
+        .dark .custom-status-select {
+            /* Dark Mode Contrast Fix for Select Background/Text */
+            background-color: #1e293b; 
+            color: #f8fafc; 
+            border-color: #334155; 
+        }
+        
+        .dark .custom-status-select option {
+            background-color: #0f172a; 
+        }
+
+        /* --- FINAL FIX: NODE BAR - Force All Nodes Visible (Flex-Wrap) --- */
+        .node-bar-container {
+            overflow-x: hidden; 
+            overflow-y: visible; 
+            width: 100%; 
+            padding-top: 5px; 
+            padding-bottom: 5px; 
+            white-space: normal;
+        }
+        /* Loại bỏ các thanh cuộn webkit cũ để tránh bị xung đột */
+        .node-bar-container::-webkit-scrollbar {
+             display: none;
+        }
+        
+        /* CRITICAL MAXIMIZE/MINIMIZE FIX */
+        /* Định nghĩa lại các lớp CSS tùy chỉnh để đảm bảo ghi đè các lớp mặc định của Tailwind (dùng !important) */
+        .block-grow {
+            flex-grow: 1 !important;
+            height: auto !important; 
+            min-height: 56px !important; 
+        }
+        .block-shrink {
+            flex-grow: 0 !important;
+            height: 56px !important; 
+            min-height: 56px !important; 
+            overflow: hidden !important;
+        }
+        
+        /* FIX: Thống kê căn giữa */
+        .block-2-header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+        /* Sử dụng Flexbox để căn giữa Box thống kê */
+        .block-2-stats-box-wrapper {
+             flex: 1; 
+             display: flex;
+             justify-content: center; 
+        }
+        
+        /* === NEW CSS FOR NODE BAR FIXES === */
+        /* Node Button Fixed Size - GIẢM TỪ 44px xuống 36px */
+        .finding-node-button {
+            width: 36px; 
+            height: 36px; 
+            font-size: 10px !important; /* Giảm font size */
+            font-weight: 700; 
+            line-height: 1;
+        }
+        /* === END NEW CSS === */
+        
+    </style>
+</head>
+<body class="bg-gray-100 text-slate-800 h-screen overflow-hidden selection:bg-indigo-100 selection:text-indigo-900 transition-colors duration-200">
+    <div id="root" class="h-full w-full"></div>
+
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+        const APP_VERSION = "11.03"; // UPGRADE VERSION TO 11.03 (UI Browse Fix)
+        const CURRENT_BUILD_TIME = new Date().toISOString().substring(0, 19).replace('T', ' '); // NEW: Capture build timestamp
+        const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-preview-09-2025";
+        
+        // --- FONT SIZE MAPPING ---
+        const FONT_SIZES = {
+            'sm': 0.9,
+            'default': 1.0,
+            'lg': 1.15,
+            'xl': 1.3
+        };
+        const MIN_FONT_SCALE = 0.85; 
+        const MAX_FONT_SCALE = 1.3;
+        const FONT_STEP = 0.05;
+
+        // Base64 URI cho ảnh tác giả đã được lật ngang (sử dụng ảnh placeholder vì không thể tạo Base64 từ file local)
+        const AUTHOR_AVATAR_URI = ''; 
+
+        // --- ICONS ---
+        const Icons = {
+            // Logo Icon: Increased size definition for 1.5x scaling
+            TDSolidLink: (<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 16 A 7 7 0 0 1 12 5 V 19 A 7 7 0 0 0 17 8" /></svg>),
+            // AI Icon: Keeping the Sparkle star (Yellow Lấp Lánh)
+            Sparkle: <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none" className="text-amber-400 drop-shadow-[0_0_4px_rgba(252,211,77,0.7)] animate-pulse-slow"><path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z"/></svg>,
+            FilePlus2: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"/><polyline points="14 2 14 8 20 8"/><path d="M3 15h6"/><path d="M6 12v6"/></svg>,
+            History: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>,
+            // FIXED 4: Changed from Database to LayoutList
+            LayoutList: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><path d="M14 4h7"/><path d="M14 9h7"/><path d="M14 15h7"/><path d="M14 20h7"/></svg>),
+            // FIXED 5: Changed from UserCog to Tag for SMO
+            Tag: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>),
+            Book: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>,
+            FileShield: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 13v7"/><path d="M8.5 16.5c2 1 5 1 7 0"/></svg>, 
+            Users: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>, 
+            Lock: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>, 
+            Cpu: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>, 
+            CheckThick: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+            CheckSquare: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-3-2V5a2 2 0 0 1 2-2h11"/></svg>,
+            Square: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>,
+            FileText: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>,
+            Search: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+            Trash2: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><path d="M14 11v6"/></svg>,
+            ChevronDown: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>,
+            ChevronUp: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><polyline points="18 15 12 9 6 15"/></svg>,
+            Wand2: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg>,
+            AlertCircle: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+            CheckCircle2: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>,
+            Save: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
+            ExpandPanel: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>,
+            CollapsePanel: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>,
+            X: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+            Copy: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>,
+            Download: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-3-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+            Sun: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
+            Moon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
+            RefreshCw: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>,
+            Lightbulb: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2v2"/><path d="M12 16a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M9 10a3 3 0 0 1 3-3 3 3 0 0 1 3 3v2H9z"/></svg>,
+            // Sparkle icon for the AI indicator (re-defined here to use in the code)
+            AIIndicator: <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z"/></svg>,
+            UploadCloud: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>,
+            Image: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>,
+            Info: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>,
+            Settings: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>,
+            Plus: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+            Minus: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+            Key: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>,
+            Loader: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>,
+            Keyboard: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><rect width="20" height="16" x="2" y="4" rx="2" ry="2"/><path d="M6 8h.001"/><path d="M10 8h.001"/><path d="M14 8h.001"/><path d="M18 8h.001"/><path d="M6 12h.001"/><path d="M10 12h.001"/><path d="M14 12h.001"/><path d="M18 12h.001"/><path d="M7 16h10"/></svg>,
+            A: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14V9a2 2 0 0 1 2-2h4L15 2l5 5h4a2 2 0 0 1 2 2v5"/><path d="M10 7L4 14h18L16 7z"/></svg>,
+            TextSize: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 17h14"/><path d="m5 12 6-7 6 7"/><path d="M17.5 17h4"/><path d="M20.5 13.5v4"/><path d="M3.5 13.5v4"/></svg>,
+            AuditUser: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M22 22 18 18 16 20 20 24 24 20Z"/></svg>,
+            // FIXED 1: Thêm Icon ScanText cho OCR
+            ScanText: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V5c0-1.1.9-2 2-2h2"/><path d="M17 3h2c1.1 0 2 .9 2 2v2"/><path d="M21 17v2c0 1.1-.9 2-2 2h-2"/><path d="M7 21H5c-1.1 0-2-.9-2-2v-2"/><path d="M7 12h.01"/><path d="M10 12h4"/><path d="M17 12h.01"/><path d="M12 7v10"/></svg>,
+            // FIXED 1: Thêm Icon Building cho Company
+            Building: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4c0-1.1.9-2 2-2h2c1.1 0 2 .9 2 2v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M12 18h.01"/></svg>,
+            // FIXED 1: Thêm Icon User cho Interviewee
+            User: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        };
+
+        const Icon = ({ name, size = 16, className = "" }) => {
+            const svg = Icons[name];
+            if (!svg) return null;
+            return React.cloneElement(svg, { width: size, height: size, className });
+        };
+        
+        // NEW: Lineart Check Icon for Vibe
+        const CheckLineart = ({ size = 20, className = '' }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+        );
+        
+        // NEW: Component điều chỉnh cỡ chữ (Moved from textareas to header)
+        // FIXED 2: Component FontSizeController được khôi phục để sử dụng ở Header (Block 0)
+        const FontSizeController = ({ fontSizeScale, adjustFontSize }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            
+            // Effect để đóng menu khi click ra ngoài
+            useEffect(() => {
+                if (!isOpen) return;
+                const handleClickOutside = (event) => {
+                    if (!event.target.closest('.font-controller-container')) {
+                        setIsOpen(false);
+                    }
+                };
+                document.addEventListener('mousedown', handleClickOutside);
+                return () => document.removeEventListener('mousedown', handleClickOutside);
+            }, [isOpen]);
+
+            return (
+                <div className="relative font-controller-container">
+                    <button 
+                        onClick={() => setIsOpen(!isOpen)} 
+                        className="p-2 rounded-xl bg-gray-50 dark:bg-slate-800 hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition-all shadow-sm" 
+                        title="Adjust Font Size"
+                    >
+                        {/* FIX 1: Thay đổi Icon A thành TextSize */}
+                        <Icon name="TextSize" size={18}/> 
+                    </button>
+
+                    {isOpen && (
+                        <div className="absolute right-0 mt-2 w-28 bg-white dark:bg-slate-800 rounded-xl shadow-lg ring-1 ring-black/5 p-2 flex items-center justify-center gap-2 z-50 animate-in fade-in slide-in-from-top-1">
+                            <button 
+                                onClick={() => adjustFontSize('decrease')} 
+                                disabled={fontSizeScale <= MIN_FONT_SCALE}
+                                className="w-8 h-8 rounded-lg text-gray-500 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed bg-gray-100 dark:bg-slate-700 shadow-sm transition-colors"
+                                title="Giảm cỡ chữ"
+                            >
+                                <Icon name="Minus" size={14} className="mx-auto" />
+                            </button>
+                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 w-8 text-center">
+                                {(fontSizeScale * 100).toFixed(0)}%
+                            </span>
+                            <button 
+                                onClick={() => adjustFontSize('increase')} 
+                                disabled={fontSizeScale >= MAX_FONT_SCALE}
+                                className="w-8 h-8 rounded-lg text-gray-500 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed bg-gray-100 dark:bg-slate-700 shadow-sm transition-colors"
+                                title="Tăng cỡ chữ"
+                            >
+                                <Icon name="Plus" size={14} className="mx-auto" />
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+        
+        // --- CUSTOM HOOKS ---
+        
+        // FIXED: Moved these definitions to App body (where they are used) or kept them outside if purely utility
+        const useDebounce = (value, delay) => {
+            const [debouncedValue, setDebouncedValue] = useState(value);
+            useEffect(() => {
+                const handler = setTimeout(() => {
+                    setDebouncedValue(value);
+                }, delay);
+                return () => {
+                    clearTimeout(handler);
+                };
+            }, [value, delay]);
+            return debouncedValue;
+        };
+
+        const copyToClipboard = (text) => {
+            if (!text) return;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).catch(err => fallbackCopy(text));
+            } else { fallbackCopy(text); }
+        };
+        const fallbackCopy = (text) => {
+            const textArea = document.createElement("textarea"); textArea.value = text;
+            textArea.style.position = "fixed"; textArea.style.left = "-9999px";
+            document.body.appendChild(textArea); textArea.focus(); textArea.select();
+            try { document.execCommand('copy'); } catch (err) { console.error(err); }
+            document.body.removeChild(textArea);
+        };
+
+        const fileToBase64 = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result.split(',')[1]); 
+                reader.onerror = error => reject(error);
+            });
+        };
+
+        const cleanAndParseJSON = (text) => {
+            if (!text) return null;
+            let cleanText = text.trim();
+            if (cleanText.startsWith("```")) {
+                cleanText = cleanText.replace(/^```(json)?/, "").replace(/```$/, "");
+            }
+            const firstBracket = cleanText.indexOf('[');
+            const firstCurly = cleanText.indexOf('{');
+            const lastBracket = cleanText.lastIndexOf(']');
+            const lastCurly = cleanText.lastIndexOf('}');
+            if (firstBracket !== -1 && lastBracket !== -1 && (firstCurly === -1 || firstBracket < firstCurly)) {
+                 cleanText = cleanText.substring(firstBracket, lastBracket + 1);
+            } else if (firstCurly !== -1 && lastCurly !== -1) {
+                 cleanText = cleanText.substring(firstCurly, lastCurly + 1);
+            }
+            return JSON.parse(cleanText);
+        };
+        
+        // NEW: Hàm loại bỏ ký tự đặc biệt cho Export Naming Convention
+        const cleanFileName = (str) => {
+            if (!str) return 'N_A';
+            return str.replace(/[^a-zA-Z0-9\s]/g, '').trim().replace(/\s+/g, '_').substring(0, 30);
+        };
+
+        // --- CORE DATA (LOCKED - DO NOT MODIFY) ---
+        const AUDIT_TYPES = {
+            "Stage 1": "Initial review of documentation and readiness.",
+            "Stage 2": "Evaluation of implementation and effectiveness of the management system.",
+            "Internal": "First-party audit to check own system.",
+            "PRE ASSESSMENT": "Gap analysis assessment.",
+            "PRE TRANSFER REVIEW": "Check valid certification for transfer.",
+            "PRE TRANSFER VISIT": "Check valid certification for transfer.",
+            "READINESS REVIEW": "Ensure readiness for transition process.",
+            "TRANSITION AUDIT": "Ensure transition to new standard.",
+            "IAV1": "Determine readiness for stage 2.",
+            "IAV2": "Certification assessment.",
+            "CAV": "Surveillance assessment.",
+            "MAJOR NC CLOSE-OUT": "Verify correction of major NC.",
+            "RAV": "Re-assessment of existing certification."
+        };
+
+        const STANDARDS_DATA = {
+            // Dữ liệu ISO 27001:2022
+            "ISO 27001:2002": {
+                name: "ISO/IEC 27001:2022 (ISMS)",
+                description: "Information Security Management System",
+                groups: [
+                    { id: "PLAN_27001", title: "Plan (4-6) Context & Planning", icon: "FileShield", clauses: [
+                        { id: "4.1", code: "4.1", title: "Understanding the organization and its context", description: "Determine external and internal issues relevant to purpose." },
+                        { id: "4.2", code: "4.2", title: "Understanding the needs and expectations of interested parties", description: "Determine interested parties and their requirements." },
+                        { id: "4.3", code: "4.3", title: "Determining the scope of the ISMS", description: "Determine boundaries and applicability of the ISMS." },
+                        { id: "4.4", code: "4.4", title: "Information security management system", description: "Establish, implement, maintain and continually improve the ISMS." },
+                        { id: "5.1", code: "5.1", title: "Leadership and commitment", description: "Top management shall demonstrate leadership and commitment." },
+                        { id: "5.2", code: "5.2", title: "Policy", description: "Establish an information security policy." },
+                        { id: "5.3", code: "5.3", title: "Organizational roles, responsibilities and authorities", description: "Ensure responsibilities and authorities are assigned." },
+                        { id: "6.1.1", code: "6.1.1", title: "General actions to address risks and opportunities", description: "Determine risks and opportunities to be addressed." },
+                        { id: "6.1.2", code: "6.1.2", title: "Information security risk assessment", description: "Define and apply an information security risk assessment process." },
+                        { id: "6.1.3", code: "6.1.3", title: "Information security risk treatment", description: "Define and apply an information security risk treatment process." },
+                        { id: "6.2", code: "6.2", title: "Information security objectives and plans", description: "Establish information security objectives at relevant functions." },
+                        { id: "6.3", code: "6.3", title: "Planning of changes", description: "Changes shall be carried out in a planned manner." }
+                    ]},
+                    { id: "SUPPORT_27001", title: "Support (7)", icon: "LayoutList", clauses: [
+                        { id: "7.1", code: "7.1", title: "Resources", description: "Determine and provide necessary resources." },
+                        { id: "7.2", code: "7.2", title: "Competence", description: "Ensure necessary competence of persons." },
+                        { id: "7.3", code: "7.3", title: "Awareness", description: "Ensure persons are aware of policy and contribution." },
+                        { id: "7.4", code: "7.4", title: "Communication", description: "Determine need for internal and external communications." },
+                        { id: "7.5", code: "7.5", title: "Documented information", description: "Include required and necessary documented information." }
+                    ]},
+                    { id: "DO_27001", title: "Do (8) Operation", icon: "Cpu", clauses: [
+                        { id: "8.1", code: "8.1", title: "Operational planning and control", description: "Plan, implement and control processes to meet requirements." },
+                        { id: "8.2", code: "8.2", title: "Information security risk assessment", description: "Perform risk assessments at planned intervals." },
+                        { id: "8.3", code: "8.3", title: "Information security risk treatment", description: "Implement risk treatment plan." }
+                    ]},
+                     { id: "CHECK_ACT_27001", title: "Check & Act (9-10) Performance & Improvement", icon: "CheckThick", clauses: [
+                        { id: "9.1", code: "9.1", title: "Monitoring, measurement, analysis and evaluation", description: "Evaluate performance and effectiveness of ISMS." },
+                        { id: "9.2", code: "9.2", title: "Internal audit", description: "Conduct internal audits at planned intervals." },
+                        { id: "9.3", code: "9.3", title: "Management review", description: "Top management reviews ISMS at planned intervals." },
+                        { id: "10.1", code: "10.1", title: "Continual improvement", description: "Continually improve suitability, adequacy and effectiveness." },
+                        { id: "10.2", code: "10.2", title: "Nonconformity and corrective action", description: "React to nonconformity and take corrective action." }
+                    ]},
+                    { id: "ANNEX_A5", title: "A.5 Organizational Controls", icon: "FileShield", clauses: [
+                        { id: "A.5.1", code: "A.5.1", title: "Policies for information security", description: "Control: Policies defined, approved, published and communicated." },
+                        { id: "A.5.2", code: "A.5.2", title: "Information security roles and responsibilities", description: "Control: Roles defined and allocated." },
+                        { id: "A.5.3", code: "A.5.3", title: "Segregation of duties", description: "Control: Conflicting duties segregated." },
+                        { id: "A.5.4", code: "A.5.4", title: "Management responsibilities", description: "Control: Management requires personnel to apply security." },
+                        { id: "A.5.5", code: "A.5.5", title: "Contact with authorities", description: "Control: Maintain contact with authorities." },
+                        { id: "A.5.6", code: "A.5.6", title: "Contact with special interest groups", description: "Control: Maintain contact with interest groups." },
+                        { id: "A.5.7", code: "A.5.7", title: "Threat intelligence", description: "Control: Collect and analyze threat info." },
+                        { id: "A.5.8", code: "A.5.8", title: "Information security in project management", description: "Control: Integrated into project management." },
+                        { id: "A.5.9", code: "A.5.9", title: "Inventory of information and other associated assets", description: "Control: Inventory developed and maintained." },
+                        { id: "A.5.10", code: "A.5.10", title: "Acceptable use of information and other associated assets", description: "Control: Rules for acceptable use identified." },
+                        { id: "A.5.11", code: "A.5.11", title: "Return of assets", description: "Control: Assets returned upon termination." },
+                        { id: "A.5.12", code: "A.5.12", title: "Classification of information", description: "Control: Information classified by needs." },
+                        { id: "A.5.13", code: "A.5.13", title: "Labelling of information", description: "Control: Procedures for labelling implemented." },
+                        { id: "A.5.14", code: "A.5.14", title: "Information transfer", description: "Control: Rules for transfer in place." },
+                        { id: "A.5.15", code: "A.5.15", title: "Access control", description: "Control: Rules to control access established." },
+                        { id: "A.5.16", code: "A.5.16", title: "Identity management", description: "Control: Life cycle of identities managed." },
+                        { id: "A.5.17", code: "A.5.17", title: "Authentication information", description: "Control: Allocation of authentication info controlled." },
+                        { id: "A.5.18", code: "A.5.18", title: "Access rights", description: "Control: Access rights provisioned and reviewed." },
+                        { id: "A.5.19", code: "A.5.19", title: "Information security in supplier relationships", description: "Control: Processes to manage supplier risks." },
+                        { id: "A.5.20", code: "A.5.20", title: "Addressing information security within supplier agreements", description: "Control: Requirements agreed with suppliers." },
+                        { id: "A.5.21", code: "A.5.21", title: "Managing information security in the ICT supply chain", description: "Control: Manage risks in ICT supply chain." },
+                        { id: "A.5.22", code: "A.5.22", title: "Monitoring, review and change management of supplier services", description: "Control: Monitor supplier service delivery." },
+                        { id: "A.5.23", code: "A.5.23", title: "Information security for use of cloud services", description: "Control: Processes for cloud services established." },
+                        { id: "A.5.24", code: "A.5.24", title: "Information security incident management planning", description: "Control: Plan and prepare for incidents." },
+                        { id: "A.5.25", code: "A.5.25", title: "Assessment and decision on information security events", description: "Control: Assess events and categorize." },
+                        { id: "A.5.26", code: "A.5.26", title: "Response to information security incidents", description: "Control: Respond in accordance with procedures." },
+                        { id: "A.5.27", code: "A.5.27", title: "Learning from information security incidents", description: "Control: Knowledge used to improve." },
+                        { id: "A.5.28", code: "A.5.28", title: "Collection of evidence", description: "Control: Procedures for evidence." },
+                        { id: "A.5.29", code: "A.5.29", title: "Information security during disruption", description: "Control: Plan to maintain security." },
+                        { id: "A.5.30", code: "A.5.30", title: "ICT readiness for business continuity", description: "Control: ICT readiness planned and tested." },
+                        { id: "A.5.31", code: "A.5.31", title: "Legal, statutory, regulatory and contractual requirements", description: "Control: Requirements identified and documented." },
+                        { id: "A.5.32", code: "A.5.32", title: "Intellectual property rights", description: "Control: Procedures to protect IPR." },
+                        { id: "A.5.33", code: "A.5.33", title: "Protection of records", description: "Control: Records protected from loss." },
+                        { id: "A.5.34", code: "A.5.34", title: "Privacy and protection of PII", description: "Control: Meet privacy requirements." },
+                        { id: "A.5.35", code: "A.5.35", title: "Independent review of information security", description: "Control: Independent review at intervals." },
+                        { id: "A.5.36", code: "A.5.36", title: "Compliance with policies, rules and standards", description: "Control: Compliance reviewed." },
+                        { id: "A.5.37", code: "A.5.37", title: "Documented operating procedures", description: "Control: Operating procedures documented." }
+                    ]},
+                    { id: "ANNEX_A6", title: "A.6 People Controls", icon: "Users", clauses: [
+                        { id: "A.6.1", code: "A.6.1", title: "Screening", description: "Control: Background checks before joining." },
+                        { id: "A.6.2", code: "A.6.2", title: "Terms and conditions of employment", description: "Control: Agreements state responsibilities." },
+                        { id: "A.6.3", code: "A.6.3", title: "Information security awareness, education and training", description: "Control: Personnel receive training." },
+                        { id: "A.6.4", code: "A.6.4", title: "Disciplinary process", description: "Control: Process for breaches." },
+                        { id: "A.6.5", code: "A.6.5", title: "Responsibilities after termination or change of employment", description: "Control: Responsibilities defined after exit." },
+                        { id: "A.6.6", code: "A.6.6", title: "Confidentiality or non-disclosure agreements", description: "Control: NDAs identified and signed." },
+                        { id: "A.6.7", code: "A.6.7", title: "Remote working", description: "Control: Security for remote work." },
+                        { id: "A.6.8", code: "A.6.8", title: "Information security event reporting", description: "Control: Mechanism to report events." }
+                    ]},
+                    { id: "ANNEX_A7", title: "A.7 Physical Controls", icon: "Lock", clauses: [
+                        { id: "A.7.1", code: "A.7.1", title: "Physical security perimeters", description: "Control: Perimeters defined and used." },
+                        { id: "A.7.2", code: "A.7.2", title: "Physical entry", description: "Control: Entry controls implemented." },
+                        { id: "A.7.3", code: "A.7.3", title: "Securing offices, rooms and facilities", description: "Control: Physical security for offices." },
+                        { id: "A.7.4", code: "A.7.4", title: "Physical security monitoring", description: "Control: Premises monitored." },
+                        { id: "A.7.5", code: "A.7.5", title: "Protecting against physical and environmental threats", description: "Control: Protection against disasters." },
+                        { id: "A.7.6", code: "A.7.6", title: "Working in secure areas", description: "Control: Measures for secure areas." },
+                        { id: "A.7.7", code: "A.7.7", title: "Clear desk and clear screen", description: "Control: Rules enforced." },
+                        { id: "A.7.8", code: "A.7.8", title: "Equipment siting and protection", description: "Control: Equipment sited to reduce risk." },
+                        { id: "A.7.9", code: "A.7.9", title: "Security of assets off-premises", description: "Control: Security for off-site assets." },
+                        { id: "A.7.10", code: "A.7.10", title: "Storage media", description: "Control: Media managed through life cycle." },
+                        { id: "A.7.11", code: "A.7.11", title: "Supporting utilities", description: "Control: Protection from power failure." },
+                        { id: "A.7.12", code: "A.7.12", title: "Cabling security", description: "Control: Cables protected." },
+                        { id: "A.7.13", code: "A.7.13", title: "Equipment maintenance", description: "Control: Equipment maintained." },
+                        { id: "A.7.14", code: "A.7.14", title: "Secure disposal or re-use of equipment", description: "Control: Secure overwriting/removal." }
+                    ]},
+                    { id: "ANNEX_A8", title: "A.8 Technological Controls", icon: "Cpu", clauses: [
+                        { id: "A.8.1", code: "A.8.1", title: "User endpoint devices", description: "Control: Information on devices protected." },
+                        { id: "A.8.2", code: "A.8.2", title: "Privileged access rights", description: "Control: Restricted and managed." },
+                        { id: "A.8.3", code: "A.8.3", title: "Information access restriction", description: "Control: Access restricted per policy." },
+                        { id: "A.8.4", code: "A.8.4", title: "Access to source code", description: "Control: Access managed." },
+                        { id: "A.8.5", code: "A.8.5", title: "Secure authentication", description: "Control: Technologies implemented." },
+                        { id: "A.8.6", code: "A.8.6", title: "Capacity management", description: "Control: Resources monitored." },
+                        { id: "A.8.7", code: "A.8.7", title: "Protection against malware", description: "Control: Protection implemented." },
+                        { id: "A.8.8", code: "A.8.8", title: "Management of technical vulnerabilities", description: "Control: Vulnerabilities managed." },
+                        { id: "A.8.9", code: "A.8.9", title: "Configuration management", description: "Control: Configurations established." },
+                        { id: "A.8.10", code: "A.8.10", title: "Information deletion", description: "Control: Deleted when not needed." },
+                        { id: "A.8.11", code: "A.8.11", title: "Data masking", description: "Control: Used per policy." },
+                        { id: "A.8.12", code: "A.8.12", title: "Data leakage prevention", description: "Control: Measures applied." },
+                        { id: "A.8.13", code: "A.8.13", title: "Information backup", description: "Control: Backups taken and tested." },
+                        { id: "A.8.14", code: "A.8.14", title: "Redundancy of information processing facilities", description: "Control: Redundancy implemented." },
+                        { id: "A.8.15", code: "A.8.15", title: "Logging", description: "Control: Logs produced and stored." },
+                        { id: "A.8.16", code: "A.8.16", title: "Monitoring activities", description: "Control: Monitored for anomalies." },
+                        { id: "A.8.17", code: "A.8.17", title: "Clock synchronization", description: "Control: Clocks synchronized." },
+                        { id: "A.8.18", code: "A.8.18", title: "Use of privileged utility programs", description: "Control: Restricted use." },
+                        { id: "A.8.19", code: "A.8.19", title: "Installation of software on operational systems", description: "Control: Securely managed." },
+                        { id: "A.8.20", code: "A.8.20", title: "Networks security", description: "Control: Networks secured." },
+                        { id: "A.8.21", code: "A.8.21", title: "Security of network services", description: "Control: Service levels identified." },
+                        { id: "A.8.22", code: "A.8.22", title: "Segregation of networks", description: "Control: Groups segregated." },
+                        { id: "A.8.23", code: "A.8.23", title: "Web filtering", description: "Control: Access managed." },
+                        { id: "A.8.24", code: "A.8.24", title: "Use of cryptography", description: "Control: Rules defined." },
+                        { id: "A.8.25", code: "A.8.25", title: "Secure development life cycle", description: "Control: Rules established." },
+                        { id: "A.8.26", code: "A.8.26", title: "Application security requirements", description: "Control: Requirements identified." },
+                        { id: "A.8.27", code: "A.8.27", title: "Secure system architecture and engineering principles", description: "Control: Principles applied." },
+                        { id: "A.8.28", code: "A.8.28", title: "Secure coding", description: "Control: Principles applied." },
+                        { id: "A.8.29", code: "A.8.29", title: "Security testing in development and acceptance", description: "Control: Testing defined." },
+                        { id: "A.8.30", code: "A.8.30", title: "Outsourced development", description: "Control: Activities monitored." },
+                        { id: "A.8.31", code: "A.8.31", title: "Separation of development, test and production environments", description: "Control: Environments separated." },
+                        { id: "A.8.32", code: "A.8.32", title: "Change management", description: "Control: Changes managed." },
+                        { id: "A.8.33", code: "A.8.33", title: "Test information", description: "Control: Protected and managed." },
+                        { id: "A.8.34", code: "A.8.34", title: "Protection of information systems during audit testing", description: "Control: Tests planned." }
+                    ]},
+                ]
+            },
+            "ISO 9001:2015": {
+                name: "ISO 9001:2015 (QMS)",
+                description: "Quality Management System",
+                groups: [
+                    { id: "PLAN_9001", title: "Plan (4-6) Context & Planning", icon: "FileShield", clauses: [
+                        { id: "4.1", code: "4.1", title: "Understanding the organization and its context", description: "Determine external and internal issues relevant to purpose and strategic direction." },
+                        { id: "4.2", code: "4.2", title: "Understanding the needs and expectations of interested parties", description: "Determine interested parties and their requirements relevant to the QMS." },
+                        { id: "4.3", code: "4.3", title: "Determining the scope of the QMS", description: "Determine boundaries and applicability of the QMS." },
+                        { id: "4.4", code: "4.4", title: "Quality management system and its processes", description: "Establish, implement, maintain and continually improve the QMS." },
+                        { id: "5.1", code: "5.1", title: "Leadership and commitment", description: "Top management shall demonstrate leadership and commitment with respect to the QMS and customer focus." },
+                        { id: "5.2", code: "5.2", title: "Policy", description: "Establish, implement and maintain a quality policy." },
+                        { id: "5.3", code: "5.3", title: "Organizational roles, responsibilities and authorities", description: "Ensure responsibilities and authorities are assigned, communicated and understood." },
+                        { id: "6.1", code: "6.1", title: "Actions to address risks and opportunities", description: "Determine risks and opportunities to be addressed to ensure QMS results." },
+                        { id: "6.2", code: "6.2", title: "Quality objectives and planning to achieve them", description: "Establish quality objectives at relevant functions, levels and processes." },
+                        { id: "6.3", code: "6.3", title: "Planning of changes", description: "Changes to the QMS shall be carried out in a planned manner." }
+                    ]},
+                    { id: "SUPPORT_9001", title: "Support (7)", icon: "LayoutList", clauses: [
+                        { id: "7.1", code: "7.1", title: "Resources", description: "Determine and provide necessary resources (People, Infrastructure, Environment, Monitoring, Knowledge)." },
+                        { id: "7.2", code: "7.2", title: "Competence", description: "Ensure necessary competence of persons affecting quality performance." },
+                        { id: "7.3", code: "7.3", title: "Awareness", description: "Ensure persons are aware of policy, objectives and contribution." },
+                        { id: "7.4", code: "7.4", title: "Communication", description: "Determine internal and external communications relevant to the QMS." },
+                        { id: "7.5", code: "7.5", title: "Documented information", description: "Include required and necessary documented information." }
+                    ]},
+                    { id: "DO_9001", title: "Do (8) Operation", icon: "Cpu", clauses: [
+                        { id: "8.1", code: "8.1", title: "Operational planning and control", description: "Plan, implement and control processes to meet requirements." },
+                        { id: "8.2", code: "8.2", title: "Requirements for products and services", description: "Customer communication, determining and review of requirements." },
+                        { id: "8.3", code: "8.3", title: "Design and development of products and services", description: "Establish a design and development process." },
+                        { id: "8.4", code: "8.4", title: "Control of externally provided processes, products and services", description: "Ensure externally provided processes, products and services conform to requirements." },
+                        { id: "8.5", code: "8.5", title: "Production and service provision", description: "Implement production and service provision under controlled conditions." },
+                        { id: "8.6", code: "8.6", title: "Release of products and services", description: "Verify requirements have been met before release." },
+                        { id: "8.7", code: "8.7", title: "Control of nonconforming outputs", description: "Ensure outputs that do not conform are identified and controlled." }
+                    ]},
+                    { id: "CHECK_ACT_9001", title: "Check & Act (9-10) Performance & Improvement", icon: "CheckThick", clauses: [
+                        { id: "9.1", code: "9.1", title: "Monitoring, measurement, analysis and evaluation", description: "Determine what needs to be monitored and evaluated. Customer Satisfaction." },
+                        { id: "9.2", code: "9.2", title: "Internal audit", description: "Conduct internal audits at planned intervals." },
+                        { id: "9.3", code: "9.3", title: "Management review", description: "Top management reviews QMS at planned intervals." },
+                        { id: "10.1", code: "10.1", title: "General", description: "Determine and select opportunities for improvement." },
+                        { id: "10.2", code: "10.2", title: "Nonconformity and corrective action", description: "React to nonconformity and take corrective action." },
+                        { id: "10.3", code: "10.3", title: "Continual improvement", description: "Continually improve suitability, adequacy and effectiveness of the QMS." }
+                    ]}
+                ]
+            },
+            // KHÔI PHỤC TIÊU CHUẨN ISO 14001:2015
+            "ISO 14001:2015": {
+                name: "ISO 14001:2015 (EMS)",
+                description: "Environmental Management System",
+                groups: [
+                    { id: "PLAN_14001", title: "Plan (4-6) Context & Planning", icon: "FileShield", clauses: [
+                        { id: "4.1", code: "4.1", title: "Understanding the organization and its context", description: "Determine external and internal issues relevant to environmental purpose." },
+                        { id: "4.2", code: "4.2", title: "Understanding the needs and expectations of interested parties", description: "Determine interested parties and their requirements." },
+                        { id: "4.3", code: "4.3", title: "Determining the scope of the EMS", description: "Determine boundaries and applicability of the EMS." },
+                        { id: "4.4", code: "4.4", title: "Environmental management system", description: "Establish, implement, maintain and continually improve the EMS." },
+                        { id: "5.1", code: "5.1", title: "Leadership and commitment", description: "Top management shall demonstrate leadership and commitment with respect to the EMS." },
+                        { id: "5.2", code: "5.2", title: "Environmental policy", description: "Establish, implement and maintain an environmental policy." },
+                        { id: "5.3", code: "5.3", title: "Organizational roles, responsibilities and authorities", description: "Ensure responsibilities and authorities are assigned and communicated." },
+                        { id: "6.1", code: "6.1", title: "Actions to address risks and opportunities", description: "Determine risks/opportunities related to environmental aspects and compliance obligations." },
+                        { id: "6.2", code: "6.2", title: "Environmental objectives and planning to achieve them", description: "Establish environmental objectives at relevant functions and levels." },
+                        { id: "6.3", code: "6.3", title: "Planning of changes", description: "Changes to the EMS shall be carried raut in a planned manner." }
+                    ]},
+                    { id: "SUPPORT_14001", title: "Support (7)", icon: "LayoutList", clauses: [
+                        { id: "7.1", code: "7.1", title: "Resources", description: "Determine and provide necessary resources for the EMS." },
+                        { id: "7.2", code: "7.2", title: "Competence", description: "Ensure necessary competence of persons doing work under control." },
+                        { id: "7.3", code: "7.3", title: "Awareness", description: "Ensure persons are aware of environmental policy and aspects." },
+                        { id: "7.4", code: "7.4", title: "Communication", description: "Determine internal and external communications relevant to the EMS." },
+                        { id: "7.5", code: "7.5", title: "Documented information", description: "Include required and necessary documented information." }
+                    ]},
+                    { id: "DO_14001", title: "Do (8) Operation", icon: "Cpu", clauses: [
+                        { id: "8.1", code: "8.1", title: "Operational planning and control", description: "Establish, implement, control and maintain processes needed for EMS." },
+                        { id: "8.2", code: "8.2", title: "Emergency preparedness and response", description: "Establish, implement and maintain processes needed to respond to potential emergency situations." }
+                    ]},
+                    { id: "CHECK_ACT_14001", title: "Check & Act (9-10) Performance & Improvement", icon: "CheckThick", clauses: [
+                        { id: "9.1", code: "9.1", title: "Monitoring, measurement, analysis and evaluation", description: "Monitor, measure, analyze and evaluate environmental performance." },
+                        { id: "9.2", code: "9.2", title: "Internal audit", description: "Conduct internal audits at planned intervals." },
+                        { id: "9.3", code: "9.3", title: "Management review", description: "Top management reviews EMS at planned intervals." },
+                        { id: "10.1", code: "10.1", title: "General", description: "Determine opportunities for improvement." },
+                        { id: "10.2", code: "10.2", title: "Nonconformity and corrective action", description: "React to nonconformity and take corrective action." },
+                        { id: "10.3", code: "10.3", title: "Continual improvement", description: "Continually improve suitability, adequacy and effectiveness of the EMS." }
+                    ]}
+                ]
+            }
+        };
+
+        const RELEASE_NOTES = [
+            // NEW: Version 11.01 Fixes
+            {
+                version: "11.02",
+                date: CURRENT_BUILD_TIME.substring(0, 10),
+                features: [
+                    "FIXED SETUP: Corrected logic for initial API Key saving and retrieval from localStorage to ensure first-time setup persistence."
+                ]
+            },
+            {
+                version: "11.01",
+                date: "2025-12-11",
+                features: [
+                    "FIXED UI: Optimized Finding Node Bar by reducing node size and displaying sequential index instead of Clause ID.",
+                    "FIXED BUG: Fixed Smart OCR failing to return results due to error handling logic in `callGemini` (rate limit/connection errors were suppressing valid results).",
+                    "FIXED UI: Fixed file cancel/remove button in the image upload container (Block 1) to ensure full visibility and easy interaction.",
+                    "FIXED UI: Adjusted Font Size button icon for better clarity and removed redundant controls from the Report panel.",
+                    "BASELINE: Version 11.01 Bugfix Update."
+                ]
+            },
+            {
+                version: "11.00",
+                date: "2025-12-11",
+                features: [
+                    "BASELINE: Version 11.00 Baseline.",
+                    "AI CORE: Enhanced report generation logic to follow formal ISO tone and structure (based on reference file).",
+                    "UI/UX: Fixed Analyze button overlap and responsiveness issues.",
+                    "UI: Changed Audit Textarea labels to English only (Reason, Audit Evidence, Suggestion).",
+                    "UI: Changed ICON for Adjust Font Size (TextSize -> A) and Master Data (Database -> LayoutList).",
+                    "UI: Changed ICON for SMO (UserCog -> Tag) to better reflect audit ID.",
+                    "UI: Added animated star orbit to the application logo.",
+                    "LOGIC: Improved data persistence (New Session stores backup, state persists on page reload via localStorage)."
+                ]
+            },
+            {
+                version: "10.04",
+                date: "2025-12-10",
+                features: [
+                    "FIXED BUG: Fixed ReferenceError: ReactDOM is not defined.",
+                    "FIXED BUG: Fixed Analyze button click issue by correcting pointer events and class placement.",
+                    "FIXED BUG: Fixed Parse error in STANDARDS_DATA (A.5.19)."
+                ]
+            },
+            // [Immersive content redacted for brevity.]
+        ];
+        
+        const KEY_CAPABILITIES = [
+            { icon: "ScanText", title: "Smart OCR", desc: "Extract text from images." },
+            { icon: "Wand2", title: "AI Analysis", desc: "Evaluate compliance." },
+            { icon: "FileText", title: "Auto Report", desc: "Generate findings." },
+            { icon: "LayoutList", title: "Multi-Standard", desc: "ISO 27001, 9001, etc." }
+        ];
+
+        // --- COMPONENTS ---
+
+        const ReleaseNotesModal = ({ isOpen, onClose }) => {
+            // Tooltip descriptions for Workflow Process
+            const workflowTooltips = {
+                '1. Select': 'Select the ISO standard and specific clauses that will be covered in the audit.',
+                '2. Input': 'Input interview notes or use the OCR feature to extract evidence text from images.',
+                '3. Analyze': 'Click the Analyze button to invoke Gemini AI, which evaluates compliance against the selected clauses based on the provided evidence.',
+                '4. Report': 'Review the AI-generated findings (NC/OFI) and generate the final comprehensive audit report.'
+            };
+
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4 fade-in backdrop-blur-sm" onClick={onClose}>
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col h-[85vh] border border-gray-100 dark:border-slate-800 transform transition-all scale-100 overflow-hidden" onClick={e => e.stopPropagation()}>
+                        
+                        {/* FIXED HEADER: Author & Title */}
+                        <div className="flex-shrink-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative">
+                            <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white z-50 p-2 bg-slate-800/50 rounded-full hover:bg-red-500/20 transition-all"><Icon name="X" size={20}/></button>
+                            
+                            <div className="p-6 flex items-center gap-6 border-b border-slate-700/50">
+                                <div className="w-16 h-16 flex-shrink-0 rounded-full bg-gradient-to-br from-amber-400 to-orange-600 p-0.5 shadow-lg shadow-amber-500/20">
+                                    {/* FIXED AVATAR: Use Wand2 Icon for Creator/AI Engineer */}
+                                    <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-amber-500">
+                                        <Icon name="Wand2" size={32}/>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h4 className="text-[10px] font-bold text-amber-500 tracking-widest uppercase border border-amber-500/30 px-2 py-0.5 rounded-full bg-amber-500/10">Created By (AI Core)</h4>
+                                        <span className="text-xs text-slate-400">v{APP_VERSION}</span>
+                                    </div>
+                                    <h2 className="text-xl font-extrabold text-white tracking-tight">
+                                        Đặng Hoàng Trung (STEVEN)
+                                    </h2>
+                                    <p className="text-slate-400 text-xs mt-1 max-w-md line-clamp-1">
+                                        Empowering auditors with AI-driven intelligence.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* SCROLLABLE CONTENT */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-gray-50 dark:bg-slate-950">
+                            
+                            {/* FIXED 2: Application Description translated to English */}
+                            <div className="mb-8 p-4 rounded-xl bg-indigo-50 dark:bg-slate-800/50 border border-indigo-100 dark:border-slate-700">
+                                <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Application Description</h4>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">
+                                    The ISO Audit Assistant is a tool designed to support Lead Auditors during the preparation and execution of audits. The application integrates Gemini AI to perform compliance analysis, identify non-conformities (NC/OFI) from audit notes/evidence, and generate the final report using a professional standard format.
+                                </p>
+                                <div className="mt-3 text-xs font-mono text-slate-500 dark:text-slate-400">
+                                    Version: <strong className="text-indigo-600 dark:text-indigo-400">v{APP_VERSION}</strong> |
+                                    Build Time: <strong className="text-indigo-600 dark:text-indigo-400">{CURRENT_BUILD_TIME}</strong>
+                                </div>
+                            </div>
+
+                            {/* WORKFLOW INFOGRAPHIC with Tooltips */}
+                            <div className="mb-8">
+                                <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                    <Icon name="Info" size={14}/> Workflow Process
+                                </h4>
+                                <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-gray-100 dark:border-slate-800 shadow-sm">
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 relative">
+                                        
+                                        {/* Step 1: Select (with Tooltip) */}
+                                        <div className="flex flex-col items-center text-center z-10 step-connector w-full sm:w-1/4 group/step" title={workflowTooltips['1. Select']}>
+                                            <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-2 shadow-sm border border-blue-100 dark:border-blue-800">
+                                                <Icon name="Book" size={20}/>
+                                            </div>
+                                            <div className="text-xs font-bold text-slate-700 dark:text-slate-200">1. Select</div>
+                                            <p className="text-[10px] text-slate-400 mt-1">Standard & Clauses</p>
+                                        </div>
+                                        
+                                        {/* Step 2: Input (with Tooltip) */}
+                                        <div className="flex flex-col items-center text-center z-10 step-connector w-full sm:w-1/4 group/step" title={workflowTooltips['2. Input']}>
+                                            <div className="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-2 shadow-sm border border-purple-100 dark:border-purple-800">
+                                                <Icon name="Keyboard" size={20}/>
+                                            </div>
+                                            <div className="text-xs font-bold text-slate-700 dark:text-slate-200">2. Input</div>
+                                            <p className="text-[10px] text-slate-400 mt-1">Evidence / OCR</p>
+                                        </div>
+
+                                        {/* Step 3: Analyze (with Tooltip) */}
+                                        <div className="flex flex-col items-center text-center z-10 step-connector w-full sm:w-1/4 group/step" title={workflowTooltips['3. Analyze']}>
+                                            <div className="w-12 h-12 rounded-xl bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 flex items-center justify-center mb-2 shadow-sm border border-pink-100 dark:border-pink-800">
+                                                <Icon name="Wand2" size={20}/>
+                                            </div>
+                                            <div className="text-xs font-bold text-slate-700 dark:text-slate-200">3. Analyze</div>
+                                            <p className="text-[10px] text-slate-400 mt-1">AI Evaluation</p>
+                                        </div>
+
+                                        {/* Step 4: Report (with Tooltip) */}
+                                        <div className="flex flex-col items-center text-center z-10 step-connector w-full sm:w-1/4 group/step" title={workflowTooltips['4. Report']}>
+                                            <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-2 shadow-sm border border-emerald-100 dark:border-emerald-800">
+                                                <Icon name="FileText" size={20}/>
+                                            </div>
+                                            <div className="text-xs font-bold text-slate-700 dark:text-slate-200">4. Report</div>
+                                            <p className="text-[10px] text-slate-400 mt-1">Findings & Export</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* KEY CAPABILITIES */}
+                            <div className="mb-8">
+                                <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Key Capabilities</h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {KEY_CAPABILITIES.map((cap, idx) => (
+                                        <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800">
+                                            <div className="mt-0.5 text-indigo-500 dark:text-indigo-400"><Icon name={cap.icon} size={16}/></div>
+                                            <div>
+                                                <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200">{cap.title}</h5>
+                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-snug">{cap.desc}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            {/* RELEASE NOTES */}
+                            <div>
+                                <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Release History</h4>
+                                {RELEASE_NOTES.map((release, index) => (
+                                    <div key={index} className="mb-4 pl-3 border-l-2 border-slate-200 dark:border-slate-700">
+                                        <div className="flex justify-between items-baseline mb-1">
+                                            <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">v{release.version}</h4>
+                                            <span className="text-[10px] text-slate-400 font-mono">{release.date}</span>
+                                        </div>
+                                        <ul className="space-y-1">
+                                            {release.features.map((feature, idx) => (
+                                                <li key={idx} className="text-[10px] text-slate-500 dark:text-slate-400 flex items-start gap-1.5">
+                                                    <span className="mt-1 w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600 flex-shrink-0"></span>
+                                                    {feature}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        <div className="p-3 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 text-center text-[10px] text-slate-400">
+                            ISO Audit Assistant &copy; 2025
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const IconInput = ({ icon, placeholder, value, onChange, className = "" }) => (
+            <div className={`relative group ${className}`}>
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors text-gray-400 group-focus-within:text-indigo-500">
+                    {/* FIXED 1: Đảm bảo Icon được render đúng cách */}
+                    <Icon name={icon} size={18} /> 
+                </div>
+                <input type="text" className="w-full pl-10 pr-3 py-2.5 bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-100 dark:focus:border-indigo-900 rounded-xl text-sm transition-all text-slate-700 dark:text-slate-200 placeholder-gray-400 focus:bg-white dark:focus:bg-slate-900 shadow-sm hover:bg-white dark:hover:bg-slate-850" placeholder={placeholder} value={value} onChange={onChange}/>
+            </div>
+        );
+
+        const IconSelect = ({ icon, value, onChange, options, defaultText, className = "" }) => (
+            <div className={`relative group ${className}`}>
+                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors text-gray-400 group-focus-within:text-indigo-500">
+                    <Icon name={icon} size={18} />
+                </div>
+                <select className={`w-full pl-10 pr-8 py-2.5 bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-100 dark:focus:border-indigo-900 rounded-xl text-sm appearance-none cursor-pointer transition-all shadow-sm hover:bg-white dark:hover:bg-slate-850 focus:bg-white dark:focus:bg-slate-900 ${value === "" ? "text-gray-400" : "text-slate-700 dark:text-slate-200"}`} value={value} onChange={onChange}>
+                    <option value="" disabled>{defaultText}</option>
+                    {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400"><Icon name="ChevronDown" size={14} /></div>
+            </div>
+        );
+
+        const Modal = ({ isOpen, title, onClose, children }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4 fade-in backdrop-blur-sm" onClick={onClose}>
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-100 dark:border-slate-800 transform transition-all" onClick={e => e.stopPropagation()}>
+                        <div className="p-5 border-b dark:border-slate-800 flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/50 rounded-t-2xl">
+                            <h3 className="font-bold text-lg text-indigo-900 dark:text-indigo-400 flex items-center gap-2">{title}</h3>
+                            <button onClick={onClose} className="text-gray-400 hover:text-red-500 p-1"><Icon name="X" size={20}/></button>
+                        </div>
+                        <div className="p-6 max-h-[80vh] overflow-y-auto custom-scrollbar">{children}</div>
+                    </div>
+                </div>
+            );
+        };
+
+        const SparkleLoader = ({ size = 20, className = "" }) => (
+            <div className={`relative flex items-center justify-center ${className}`}>
+                 <Icon name="Sparkle" size={size} className="animate-sparkle-spin text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]"/>
+            </div>
+        );
+
+        const ClauseItem = ({ clause, isSelected, onToggle, onCopy }) => {
+            
+            const handleItemClick = (e) => {
+                // Nếu click vào nút copy, ngăn chặn toggle và chỉ copy
+                if (e.target.closest('.copy-button')) {
+                    e.stopPropagation();
+                    onCopy(clause.description);
+                    // Vẫn toggle sau khi copy, theo logic cải tiến: vừa chọn vừa copy
+                    onToggle(clause.id);
+                } else {
+                    onToggle(clause.id);
+                }
+            };
+            
+            return (
+                <div 
+                    className="group border border-gray-100 dark:border-slate-800 rounded-lg p-3 bg-white dark:bg-slate-900 hover:border-indigo-200 dark:hover:border-indigo-900 transition-all flex items-start gap-3 relative overflow-hidden clause-container cursor-pointer"
+                    onClick={handleItemClick}
+                >
+                    <div className={`mt-0.5 flex-shrink-0 transition-colors ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-300 dark:text-slate-600 hover:text-gray-400'}`}>
+                        {isSelected ? <Icon name="CheckSquare" size={18}/> : <Icon name="Square" size={18}/>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        {/* Title: Removed hover copy on title */}
+                        <div className="text-adjustable-sm font-semibold text-slate-700 dark:text-slate-200 mb-1 select-none">
+                            {clause.code} - {clause.title}
+                        </div>
+                        {/* Description: Added copy icon that appears on description hover */}
+                        <div className="text-adjustable-xs text-slate-500 dark:text-slate-400 description-text">
+                            {clause.description}
+                            <button 
+                                onClick={(e) => { 
+                                    // Logic click đã được xử lý trong handleItemClick, nhưng ta vẫn đảm bảo copy được
+                                    // Cần dùng e.stopPropagation() trên nút này để handleItemClick không gọi onToggle hai lần
+                                    e.stopPropagation(); 
+                                    onCopy(clause.description); 
+                                    onToggle(clause.id); // Vẫn toggle khi bấm icon copy
+                                }} 
+                                className="copy-icon-trigger text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 copy-button" 
+                                title="Copy Description"
+                            >
+                                <Icon name="Copy" size={12}/>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        function App() {
+            const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+            // --- CUSTOM HOOKS (FIX: Move inside App) ---
+            const useDebounce = (value, delay) => {
+                const [debouncedValue, setDebouncedValue] = useState(value);
+                useEffect(() => {
+                    const handler = setTimeout(() => {
+                        setDebouncedValue(value);
+                    }, delay);
+                    return () => {
+                        clearTimeout(handler);
+                    };
+                }, [value, delay]);
+                return debouncedValue;
+            };
+
+            // FIXED: Moved startResizing, stopResizing, resize inside App function body
+            const startResizing = useCallback((e) => {
+                e.preventDefault();
+                setIsResizing(true);
+            }, []);
+            const stopResizing = useCallback(() => setIsResizing(false), []);
+            const resize = useCallback((e) => {
+                if (isResizing) {
+                    const newWidth = e.clientX;
+                    if (newWidth >= 280 && newWidth <= 800) setSidebarWidth(newWidth);
+                }
+            }, [isResizing]);
+            
+            // --- FINDING NAVIGATION STATE ---
+            const [findingStartIndex, setFindingStartIndex] = useState(0); 
+            
+            // -- CORE STATE --
+            const [apiKey, setApiKey] = useState("");
+            const [modelId, setModelId] = useState(DEFAULT_GEMINI_MODEL);
+            const [showSetup, setShowSetup] = useState(false);
+            const [showSettings, setShowSettings] = useState(false);
+            const [showImportModal, setShowImportModal] = useState(false);
+            const [showAboutModal, setShowAboutModal] = useState(false); 
+            const [copySuccess, setCopySuccess] = useState(false);
+            
+            // --- Font Size State (NEW) ---
+            const [fontSizeScale, setFontSizeScale] = useState(1.0); 
+            const FONT_STEP = 0.05;
+            const MIN_FONT_SCALE = 0.85; 
+            const MAX_FONT_SCALE = 1.3;
+            
+            // --- Analysis Status State ---
+            const [isAnalysisSuccess, setIsAnalysisSuccess] = useState(null); 
+            const [showToast, setShowToast] = useState(false);
+            const [isReportLoading, setIsReportLoading] = useState(false); 
+            const [isAnalyzeLoading, setIsAnalyzeLoading] = useState(false); 
+            const [analyzeErrorInBlock1, setAnalyzeErrorInBlock1] = useState(null); 
+
+            // -- DATA STATE --
+            const [customStandards, setCustomStandards] = useState({});
+            const [standard, setStandard] = useState("");
+            const [auditInfo, setAuditInfo] = useState({ company: "", smo: "", department: "", interviewee: "", auditor: "", type: "" }); 
+            const [selectedClauses, setSelectedClauses] = useState([]);
+            const [evidence, setEvidence] = useState(""); 
+            
+            // -- ANALYSIS STATE --
+            const [analysisResult, setAnalysisResult] = useState(null); 
+            const [finalReportText, setFinalReportText] = useState(null); 
+            const [isOcrLoading, setIsOcrLoading] = useState(false);
+            const [aiError, setAiError] = useState(null);
+
+            // -- FINDINGS STATE --
+            const [selectedSuggestions, setSelectedSuggestions] = useState({});
+            const [findingDetails, setFindingDetails] = useState({}); 
+
+            // -- UI STATE --
+            const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+            const [sidebarWidth, setSidebarWidth] = useState(380);
+            // REQUIREMENT: Block 1 Maximized on launch
+            const [layoutMode, setLayoutMode] = useState('evidence'); 
+            const [isDarkMode, setIsDarkMode] = useState(
+                 // FIXED 1: Read initial dark mode state from local storage or system preference
+                localStorage.getItem('iso_dark_mode') === 'true' || 
+                (localStorage.getItem('iso_dark_mode') === null && window.matchMedia('(prefers-color-scheme: dark)').matches)
+            );
+            const [pastedImages, setPastedImages] = useState([]);
+            const [searchQueryRaw, setSearchQueryRaw] = useState(""); 
+            
+            const searchQuery = useDebounce(searchQueryRaw, 300);
+            
+            const [expandedGroups, setExpandedGroups] = useState([]);
+            const [isResizing, setIsResizing] = useState(false);
+            
+            // -- IMPORT STATE --
+            const [importText, setImportText] = useState("");
+            const [importImages, setImportImages] = useState([]);
+            const [importStatus, setImportStatus] = useState("");
+
+            const dropZoneRef = useRef(null);
+            const fileInputRef = useRef(null); 
+            
+            // FIX: Ref for scroll container
+            const scrollContainerRef = useRef(null); 
+            const findingsScrollRef = useRef(null); 
+            
+            // --- NEW: Cursor position state and Ref for evidence textarea ---
+            const [cursorPosition, setCursorPosition] = useState(0); 
+            const evidenceRef = useRef(null);
+            
+            // --- COMPUTED ---
+            const allStandards = useMemo(() => ({ ...STANDARDS_DATA, ...customStandards }), [customStandards]);
+            
+            // 1. Behavior Analyze button: Chỉ hiện khi có Evidence
+            const hasEvidence = evidence.trim().length > 0 || pastedImages.length > 0;
+            // Nút Analyze chỉ bị disabled khi thiếu Clauses hoặc đang loading
+            const isAnalyzeDisabled = isAnalyzeLoading || selectedClauses.length === 0; 
+            
+            // Footer buttons logic
+            const isDownloadReady = finalReportText !== null && !finalReportText.startsWith('ERROR:'); 
+            
+            const selectedFindingCount = Object.values(selectedSuggestions).filter(Boolean).length;
+
+
+            // --- CORE FUNCTION: Save API Key (FIX) ---
+            const saveApiKey = (key) => {
+                const trimmedKey = key ? key.trim() : '';
+                setApiKey(trimmedKey);
+                if (trimmedKey) {
+                    localStorage.setItem('iso_gemini_api_key', trimmedKey);
+                    setShowSetup(false);
+                } else {
+                    localStorage.removeItem('iso_gemini_api_key');
+                    setShowSetup(true); // Nếu xóa key, bật lại setup modal
+                }
+            };
+
+
+            // --- FONT SIZE EFFECT (UPDATED DYNAMICALLY) ---
+            
+            // Function to change font size dynamically
+            const adjustFontSize = (direction) => {
+                setFontSizeScale(prevScale => {
+                    let newScale = prevScale;
+                    if (direction === 'increase') {
+                        newScale = Math.min(MAX_FONT_SCALE, prevScale + FONT_STEP);
+                    } else if (direction === 'decrease') {
+                        newScale = Math.max(MIN_FONT_SCALE, prevScale - FONT_STEP);
+                    } else if (direction === 'reset') {
+                        newScale = 1.0;
+                    }
+                    // Làm tròn để tránh lỗi dấu phẩy động
+                    newScale = Math.round(newScale * 100) / 100;
+                    localStorage.setItem('iso_font_scale', newScale);
+                    return newScale;
+                });
+            };
+
+
+            useEffect(() => {
+                // Apply scale to CSS variable
+                document.documentElement.style.setProperty('--font-scale', fontSizeScale);
+            }, [fontSizeScale]);
+
+            // --- INITIAL LOAD EFFECT (FIXED: API Key Loading) ---
+            useEffect(() => {
+                // 1. Load Font Scale
+                const storedScale = localStorage.getItem('iso_font_scale');
+                if (storedScale) {
+                    setFontSizeScale(parseFloat(storedScale));
+                }
+                
+                // 2. Load API Key
+                const storedKey = localStorage.getItem('iso_gemini_api_key');
+                if (storedKey) {
+                    setApiKey(storedKey);
+                } else {
+                    setShowSetup(true); // Nếu không có key, hiển thị modal setup
+                }
+
+                // 3. Load Persistent Data
+                const savedAuditInfo = localStorage.getItem("iso_audit_info");
+                const savedSelectedClauses = localStorage.getItem("iso_selected_clauses");
+                const savedEvidence = localStorage.getItem("iso_evidence");
+
+                if (savedAuditInfo) setAuditInfo(JSON.parse(savedAuditInfo));
+                if (savedSelectedClauses) setSelectedClauses(JSON.parse(savedSelectedClauses));
+                if (savedEvidence) setEvidence(savedEvidence);
+                
+            }, []);
+            
+            // FIXED 1: Dark Mode Effect to apply class to body
+            useEffect(() => {
+                localStorage.setItem('iso_dark_mode', isDarkMode);
+                if (isDarkMode) {
+                    document.body.classList.add('dark');
+                } else {
+                    document.body.classList.remove('dark');
+                }
+            }, [isDarkMode]);
+            
+            // FIXED 6: Save state on change
+            useEffect(() => {
+                localStorage.setItem("iso_audit_info", JSON.stringify(auditInfo));
+            }, [auditInfo]);
+
+            useEffect(() => {
+                localStorage.setItem("iso_selected_clauses", JSON.stringify(selectedClauses));
+            }, [selectedClauses]);
+
+            useEffect(() => {
+                localStorage.setItem("iso_evidence", evidence);
+            }, [evidence]);
+            
+            
+            // --- FINDING NAVIGATION LOGIC ---
+            const totalFindings = analysisResult ? analysisResult.length : 0;
+            
+            const visibleFindings = useMemo(() => {
+                if (!analysisResult) return [];
+                // Vẫn giữ logic chỉ hiển thị 1 thẻ tại index hiện tại
+                return analysisResult.slice(findingStartIndex, findingStartIndex + 1);
+            }, [analysisResult, findingStartIndex]);
+            
+            const currentFinding = visibleFindings[0];
+
+            // NEW: Handle Node Click
+            const handleNodeClick = (index) => {
+                setFindingStartIndex(index);
+                if (findingsScrollRef.current) findingsScrollRef.current.scrollTop = 0;
+            };
+
+            // Removed unused finding navigation variables.
+            
+            // --- CẬP NHẬT FINDING RESULT SAU KHI EDIT
+            const updateAnalysisResult = (clauseId, field, value) => {
+                setAnalysisResult(prev => prev.map(item => 
+                    item.clauseId === clauseId ? { ...item, [field]: value } : item
+                ));
+            };
+            
+            // --- CHỌN TẤT CẢ CLAUSES TRONG NHÓM (NEW)
+            const toggleAllClausesInGroup = (groupId) => {
+                const group = allStandards[standard].groups.find(g => g.id === groupId);
+                if (!group) return;
+                
+                const allClauseIds = group.clauses.map(c => c.id);
+                const allSelected = allClauseIds.every(id => selectedClauses.includes(id));
+                
+                setSelectedClauses(prev => {
+                    let newSelection = [...prev];
+                    if (allSelected) {
+                        // Bỏ chọn tất cả
+                        newSelection = newSelection.filter(id => !allClauseIds.includes(id));
+                    } else {
+                        // Chọn tất cả
+                        allClauseIds.forEach(id => {
+                            if (!newSelection.includes(id)) {
+                                newSelection.push(id);
+                            }
+                        });
+                    }
+                    return newSelection;
+                });
+            };
+            
+            // --- REMOVE ALL FINDINGS (NEW) ---
+            const handleRemoveAllFindings = () => {
+                // Sử dụng confirm tạm thời - NOTE: In a real app, use a custom modal
+                const shouldProceed = window.confirm("Are you sure you want to remove ALL selected findings from the report?"); 
+                
+                if (shouldProceed) {
+                    setSelectedSuggestions({});
+                    // Không xóa analysisResult, chỉ reset selection
+                }
+            };
+            
+            // --- RECALL/NEWSESSION (FIXED 6) ---
+            const handleRefresh = () => {
+                // Create backup of current session
+                localStorage.setItem("iso_backup_evidence", evidence);
+                localStorage.setItem("iso_backup_info", JSON.stringify(auditInfo));
+                localStorage.setItem("iso_backup_clauses", JSON.stringify(selectedClauses));
+                
+                // Reset to new session state
+                setAuditInfo({ company: "", smo: "", department: "", interviewee: "", auditor: "", type: "" }); 
+                setSelectedClauses([]);
+                setEvidence("");
+                setAnalysisResult(null);
+                setFinalReportText(null); 
+                setPastedImages([]);
+                setFindingDetails({});
+                setIsAnalysisSuccess(null); 
+                setLayoutMode('evidence'); 
+                setFindingStartIndex(0); 
+                setSelectedSuggestions({}); 
+                
+                console.log("New session started. Previous data backed up.");
+            };
+
+            const handleRecall = () => {
+                const backupEv = localStorage.getItem("iso_backup_evidence");
+                const backupInfo = localStorage.getItem("iso_backup_info");
+                const backupClauses = localStorage.getItem("iso_backup_clauses");
+                
+                if (backupInfo) setAuditInfo(JSON.parse(backupInfo));
+                if (backupClauses) setSelectedClauses(JSON.parse(backupClauses));
+                if (backupEv) setEvidence(backupEv);
+                
+                setAnalysisResult(null); 
+                setFinalReportText(null); 
+                setFindingDetails({});
+                setIsAnalysisSuccess(null); 
+                setLayoutMode('evidence'); 
+                setFindingStartIndex(0); 
+                setSelectedSuggestions({}); 
+                
+                console.log("Session recalled from backup.");
+            };
+            // --- END RECALL/NEWSESSION ---
+
+            const handleSmartCopy = (text) => {
+                copyToClipboard(text);
+                setCopySuccess(true);
+                setTimeout(() => setCopySuccess(false), 2000);
+            };
+
+            const toggleDarkMode = () => setIsDarkMode(prev => !prev); // FIXED 1: Update state and trigger effect
+
+            const toggleSuggestion = (clauseId) => {
+                setSelectedSuggestions(prev => ({ ...prev, [clauseId]: !prev[clauseId] }));
+                
+                if (!selectedSuggestions[clauseId] && !findingDetails[clauseId]) {
+                    const originalStatus = analysisResult?.find(r => r.clauseId === clauseId)?.status || 'COMPLIANT';
+                    let defaultClassification = 'N_A'; 
+                    
+                    if (originalStatus === 'NON_COMPLIANT' || originalStatus === 'WARNING') {
+                        defaultClassification = 'NC_Minor';
+                    }
+                    
+                    setFindingDetails(prev => ({ 
+                        ...prev, 
+                        [clauseId]: { classification: defaultClassification } 
+                    }));
+                }
+            };
+            
+            const updateFindingDetailClassification = (clauseId, classificationValue) => {
+                setFindingDetails(prev => ({
+                    ...prev,
+                    [clauseId]: { ...prev[clauseId], classification: classificationValue }
+                }));
+                
+                setSelectedSuggestions(prev => ({ ...prev, [clauseId]: true }));
+            };
+
+
+            const updateFindingDetail = (clauseId, field, value) => {
+                if (field === 'reason' || field === 'suggestion' || field === 'evidence') {
+                    setAnalysisResult(prev => prev.map(item => 
+                        item.clauseId === clauseId ? { ...item, [field]: value } : item
+                    ));
+                } else {
+                     console.error("Attempted to set invalid field:", field);
+                }
+            };
+
+            // FIX: Correct assignment of the joined string to the variable used in copyToClipboard
+            const handleCopySelectedClauses = () => {
+                if (!standard || !allStandards[standard]) return;
+                
+                // Sửa lỗi: Gán kết quả của .map().join('\n') vào biến 'textToCopy'
+                const textToCopy = allStandards[standard].groups.flatMap(g => g.clauses)
+                    .filter(c => selectedClauses.includes(c.id))
+                    .map(c => `[${c.code}] ${c.title}`)
+                    .join('\n'); // Kết quả là một chuỗi
+
+                copyToClipboard(textToCopy); // Truyền chuỗi trực tiếp để copy
+                setCopySuccess(true);
+                setTimeout(() => setCopySuccess(false), 2000);
+            };
+            
+            // NEW: Handle Manual File Selection for OCR
+            const handleFileSelect = (e) => {
+                const files = Array.from(e.target.files).filter(file => file.type.startsWith('image/'));
+                if (files.length > 0) {
+                    setPastedImages(prev => [...prev, ...files]);
+                    setLayoutMode('evidence');
+                }
+                // Reset file input value to allow selecting the same file again
+                if (fileInputRef.current) fileInputRef.current.value = null;
+            };
+
+
+            const handleImportProcess = async () => {
+                if (!importText.trim() && importImages.length === 0) return;
+                setImportStatus("Processing...");
+                
+                setLayoutMode('evidence'); 
+
+                try {
+                    let fullContent = importText;
+                    if (importImages.length > 0) {
+                        setImportStatus("Scanning images...");
+                        const visionPromises = importImages.map(async (file) => {
+                            const b64 = await fileToBase64(file);
+                            const payload = { contents: [{ role: "user", parts: [{ text: "Extract all text from this standard document page. Return English plain text only." }, { inlineData: { mimeType: file.type, data: b64 } }] }] };
+                            return await callGemini(payload);
+                        });
+                        const ocrResults = await Promise.all(visionPromises);
+                        fullContent += "\n\n" + ocrResults.join("\n\n");
+                    }
+                    setImportStatus("Structuring data...");
+                    const systemInstruction = "You are a data structuring agent. Your task is to extract information from the RAW TEXT and convert it into a valid JSON array matching the provided schema. Doadaş not include any text outside the JSON block.";
+                    const prompt = `Convert text to JSON schema: { "name": "Name", "groups": [ { "id": "ID", "title": "Title", "icon": "FileShield", "clauses": [ { "id": "ID", "code": "Code", "title": "Title", "description": "Desc" } ] } ] }. RAW TEXT: ${fullContent.substring(0, 30000)}`;
+                    const payload = { 
+                        contents: [{ role: "user", parts: [{ text: prompt }] }], 
+                        systemInstruction: { parts: [{ text: systemInstruction }] }, 
+                        generationConfig: { responseMimeType: "application/json" } 
+                    };
+                    
+                    const jsonStr = await callGemini(payload);
+                    const parsedResult = cleanAndParseJSON(jsonStr);
+                    
+                    if (parsedResult && parsedResult.name && parsedResult.groups) {
+                        const newStandards = { ...customStandards, [parsedResult.name]: parsedResult };
+                        setCustomStandards(newStandards);
+                        localStorage.setItem("iso_custom_standards", JSON.stringify(newStandards));
+                        setStandard(parsedResult.name);
+                        setShowImportModal(false);
+                        setImportText(""); setImportImages([]);
+                    } else {
+                        throw new Error("AI returned invalid JSON structure. Please try refreshing and re-running the analysis.");
+                    }
+                    
+                } catch (err) { 
+                    setImportStatus(`Import Failed: ${err.message}`);
+                    setTimeout(() => setImportStatus(""), 5000);
+                } 
+                finally { 
+                    if(importStatus.startsWith("Processing") || importStatus.startsWith("Scanning")) setImportStatus(""); 
+                }
+            };
+
+            const handleDrop = (e) => {
+                e.preventDefault(); e.stopPropagation();
+                if (e.dataTransfer.files) {
+                    let newImages = [];
+                    for(let i=0; i<e.dataTransfer.files.length; i++) {
+                        if (e.dataTransfer.files[i].type.startsWith('image/')) newImages.push(e.dataTransfer.files[i]);
+                    }
+                    if(newImages.length > 0) {
+                        setPastedImages(prev => [...prev, ...newImages]);
+                        setLayoutMode('evidence');
+                    }
+                }
+            };
+            // FIX: Nút X của ảnh quá nhỏ và nằm sát cạnh, di chuyển ra ngoài 
+            const removeImage = (index) => setPastedImages(prev => prev.filter((_, i) => i !== index));
+
+            const handleOcrUpload = async () => {
+                if (pastedImages.length === 0) return;
+                setIsOcrLoading(true);
+                setLayoutMode('evidence'); 
+
+                try {
+                    const ocrPromises = pastedImages.map(async (file) => {
+                        const b64 = await fileToBase64(file);
+                        
+                        const parts = [
+                             { text: "Extract all text from this image which is a document page for an ISO audit. Return only the raw, extracted text in English." }, 
+                             { inlineData: { mimeType: file.type, data: b64 } }
+                        ];
+
+                        const payload = { contents: [{ role: "user", parts: parts }] };
+                        
+                        // Gọi Gemini API để thực hiện OCR
+                        const res = await callGemini(payload, true); // Dùng isVision=true
+                        return res;
+                    });
+                    
+                    const results = await Promise.all(ocrPromises);
+                    
+                    const newText = results.join('\n\n');
+                    
+                    setEvidence(prev => {
+                        // Logic chèn vào vị trí con trỏ
+                        const prefix = prev.substring(0, cursorPosition);
+                        const suffix = prev.substring(cursorPosition);
+                        // Thêm một dòng trống nếu cần thiết
+                        const insertedText = (cursorPosition === 0 || prev[cursorPosition - 1] === '\n') ? newText : `\n\n${newText}`;
+                        return `${prefix}${insertedText}${suffix}`;
+                    });
+                    
+                    // NEW: Cập nhật vị trí con trỏ sau khi chèn (Async/Next Tick)
+                    setTimeout(() => {
+                        if (evidenceRef.current) {
+                            const newCursorPos = cursorPosition + newText.length + (cursorPosition === 0 || evidence[cursorPosition - 1] === '\n' ? 0 : 2);
+                            evidenceRef.current.selectionStart = newCursorPos;
+                            evidenceRef.current.selectionEnd = newCursorPos;
+                            setCursorPosition(newCursorPos);
+                        }
+                    }, 0);
+                    
+                    setPastedImages([]);
+                    
+                } catch (error) { 
+                    setAiError("OCR Failed: " + error.message); 
+                    setIsAnalysisSuccess(false); 
+                    console.error("OCR Failed:", error.message); // Log error
+                } 
+                finally { 
+                    setIsOcrLoading(false);
+                }
+            };
+            
+            // NEW: Handle cursor position change
+            const handleCursorChange = (e) => {
+                setCursorPosition(e.target.selectionStart);
+            };
+
+            // FIXED 1 (Lỗi OCR): Triển khai lại hàm callGemini với logic xử lý lỗi và Vision API.
+            // Đảm bảo việc truyền API Key và xử lý lỗi Rate Limit không làm mất kết quả hợp lệ.
+            const callGemini = async (payload, isVision = false) => {
+                 // Dùng API Key từ state
+                 const model = isVision ? DEFAULT_GEMINI_MODEL : modelId;
+                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+                 
+                 let response;
+                 const MAX_RETRIES = 3;
+                 let delay = 1000;
+
+                 for (let i = 0; i < MAX_RETRIES; i++) {
+                     try {
+                        const fetchPayload = { ...payload };
+
+                        response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(fetchPayload)
+                        });
+
+                        // Cần check response.status trước khi đọc response.json()
+                        if (response.status === 429) {
+                            if (i < MAX_RETRIES - 1) {
+                                await new Promise(resolve => setTimeout(resolve, delay));
+                                delay *= 2; 
+                                continue;
+                            }
+                            throw new Error("Rate limit exceeded.");
+                        }
+
+                        const result = await response.json();
+                        
+                        // Xử lý lỗi từ API (response.ok = false)
+                         if (!response.ok) {
+                            const errorMessage = result.error?.message || 'Unknown API error';
+                            throw new Error(`API returned status ${response.status}: ${errorMessage}`);
+                        }
+
+                        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                        if (!text) {
+                            // Đây có thể là nguyên nhân lỗi OCR không trả kết quả. 
+                            // Nếu API thành công nhưng text rỗng, ta vẫn nên coi là lỗi.
+                            throw new Error("AI response was empty or malformed.");
+                        }
+                        
+                        return text; // Thành công
+
+                     } catch (error) {
+                         // Xử lý lỗi mạng, hoặc lỗi từ API (trừ Rate Limit đã xử lý ở trên)
+                         if (i < MAX_RETRIES - 1) {
+                            console.warn(`Retry attempt ${i + 1} failed: ${error.message}`);
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            delay *= 2; 
+                            continue;
+                         }
+                         throw error; // Throw lỗi sau khi hết retry
+                     }
+                 }
+                 throw new Error("Gemini API call failed after multiple retries.");
+            };
+
+            // FIXED 3: Thêm logic enable Analyze Button khi có đủ điều kiện
+            const handleAnalyzePrompt = async () => {
+                if (isAnalyzeDisabled) {
+                    if (selectedClauses.length === 0) {
+                        // Đã chuyển sang dùng console.error theo hướng dẫn
+                        console.error("Vui lòng chọn ít nhất một điều khoản (Clause) để phân tích.");
+                    } else if (!hasEvidence) {
+                        console.error("Vui lòng nhập hoặc tải lên Audit Notes/Evidence để phân tích.");
+                    }
+                    return;
+                }
+                
+                setIsAnalyzeLoading(true); 
+                setAnalysisResult(null); 
+                setFinalReportText(null);
+                setIsAnalysisSuccess(null); 
+                setAiError(null);
+                setAnalyzeErrorInBlock1(null); 
+                setFindingStartIndex(0); 
+
+                
+                const clauses = allStandards[standard].groups.flatMap(g => g.clauses).filter(c => selectedClauses.includes(c.id))
+                    .map(c => `- ${c.code} ${c.title}: ${c.description}`).join('\n');
+                
+                const prompt = `Act as an ISO Lead Auditor. Analyze the RAW EVIDENCE provided below against each CLAUSE. For each clause, determine the status (COMPLIANT, NON_COMPLIANT, or WARNING). Provide a detailed, professional reason in English, a clear suggestion for improvement/correction in English, and extract the most concise quote or summary from the RAW EVIDENCE that directly supports the finding (or compliance).
+
+RAW EVIDENCE: """ ${evidence} """
+
+CLAUSES to Evaluate:
+${clauses}
+
+Return a JSON ARRAY: [{ "clauseId", "status", "reason", "suggestion", "evidence" }]. The 'evidence' field MUST be a precise quote or summary mapped directly from the RAW EVIDENCE for that specific finding. The 'reason' field must explain the correlation/gap between the clause requirement and the extracted evidence.`;
+                
+                const systemInstruction = `You are an ISO Lead Auditor specializing in ${standard}. Context: Audit for ${auditInfo.company}, Department: ${auditInfo.department}. Your output MUST be a JSON array only.`;
+                
+                try {
+                    
+                    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: systemInstruction }] }, generationConfig: { responseMimeType: "application/json" } };
+                    
+                    const res = await callGemini(payload, false);
+
+                    const parsedResult = cleanAndParseJSON(res);
+                    
+                    if (parsedResult) {
+                         const resultsWithEvidence = parsedResult.map(item => ({
+                            ...item,
+                            evidence: item.evidence || '' 
+                         }));
+                         setAnalysisResult(resultsWithEvidence);
+                         setSelectedSuggestions({});
+                         setFindingDetails({});
+                         setIsAnalysisSuccess(true); 
+                         setLayoutMode('findings'); 
+                    } else {
+                        throw new Error("AI returned invalid JSON structure. Please try refreshing and re-running the analysis.");
+                    }
+                    
+                } catch (err) { 
+                    setAiError(err.message); 
+                    setAnalyzeErrorInBlock1(true); 
+                    setIsAnalysisSuccess(false); 
+                    setLayoutMode('evidence'); 
+                } 
+                finally { 
+                    setIsAnalyzeLoading(false);
+                }
+            };
+
+            const handleGenerateReport = async (retry = false) => {
+                if (!analysisResult) return;
+                if (!retry && finalReportText !== null && !finalReportText.startsWith('ERROR:')) return; 
+                
+                setIsReportLoading(true); 
+                setAiError(null);
+                setFinalReportText(null); 
+                setLayoutMode('report'); 
+
+                const clauseList = allStandards[standard].groups.flatMap(g => g.clauses).filter(c => selectedClauses.includes(c.id));
+                const clauseMap = new Map(clauseList.map(c => [c.id, c.title]));
+
+                let findingsConfigList = [];
+                Object.keys(selectedSuggestions).forEach(clauseId => {
+                    if (selectedSuggestions[clauseId]) {
+                        const { type, grade, classification } = getFinalStatusDetails(clauseId);
+                        
+                        const currentResult = analysisResult.find(r => r.clauseId === clauseId);
+                        
+                        findingsConfigList.push(`Clause ${clauseId}: NAME="${clauseMap.get(clauseId)}", TYPE=${type}, GRADE_NC=${grade}, CLASSIFICATION_CODE=${classification}, REASON_EDITED="${currentResult?.reason}", SUGGESTION_EDITED="${currentResult?.suggestion}", EVIDENCE_AUDIT="${currentResult?.evidence}"`);
+                    }
+                });
+                const findingsContext = findingsConfigList.length > 0 ? `\n\nUSER SELECTED FINDINGS (These MUST go into the "FINDINGS SUMMARY" section at the end):\n${findingsConfigList.join('\n')}` : "\n\nNO FINDINGS SELECTED.";
+
+                const auditInfoContext = `
+AUDIT INFORMATION (Từ Block 1):
+  - Company: ${auditInfo.company || 'N/A'}
+  - SMO: ${auditInfo.smo || 'N/A'}
+  - Department: ${auditInfo.department || 'N/A'}
+  - Interviewee: ${auditInfo.interviewee || 'N/A'}
+  - Auditor: ${auditInfo.auditor || 'N/A'}
+  - Audit Type: ${auditInfo.type || 'N/A'}
+  - Standard: ${standard || 'N/A'}
+`;
+
+                const prompt = `Generate a comprehensive Final Audit Report in English.
+
+You MUST adopt the formal tone, structure, and professional language of an ISO audit report, similar to the tone found in typical ISO auditor reports (e.g., using passive voice, focusing on documented evidence and processes, phrasing conclusions like 'The process has been adequately planned and documented').
+
+1. INTRODUCTION & SCOPE: Briefly summarize the audit based on the AUDIT INFORMATION provided.
+2. AUDIT OBSERVATIONS: Refine and translate the RAW AUDIT NOTES (provided below) into polished, formal English paragraphs, summarizing the overall audit activity and observations for each selected clause. This must be the refined content from Block 1. Start observations with formal phrases (e.g., 'Interviewing top management revealed...', 'Review of documented information confirmed...').
+3. FINDINGS DETAILS: Detail all user-selected findings from the CONTEXT provided, strictly using the prescribed format below.
+
+CONTEXT:
+${auditInfoContext}
+RAW AUDIT NOTES: """ ${evidence} """
+${findingsContext}
+
+REPORT STRUCTURE (Output as clean plain text, use simple line breaks for paragraphs):
+
+--- AUDIT REPORT: [Standard] - [Audit Type] ---
+AUDIT SUMMARY:
+[1. A refined, formal English summary of the RAW AUDIT NOTES/Evidence.]
+
+CLAUSE REVIEW:
+[2. For EACH Clause ID (including non-selected ones) generate a brief status statement in the formal ISO style (e.g., "[ID] Compliant: The documented process is effective and consistently implemented.") Ensure all initially selected clauses are mentioned.]
+
+FINDINGS SUMMARY:
+[3. Group all user-selected NC and OFI findings here.]
+   - For TYPE=NC, format exactly like this:
+     NC [GRADE] [Clause ID] [Clause Name]
+     REQUIREMENT: [Quote the specific requirement text (from original clauses) for this ID, use a placeholder if necessary but state clearly]
+     OBSERVATION: [Negative statement describing the non-conformity based on REASON_EDITED]
+     EVIDENCE: [Specific evidence used from EVIDENCE_AUDIT field]
+     CORRECTIVE ACTION SUGGESTION: [Suggestion text from SUGGESTION_EDITED]
+   - For TYPE=OFI, format exactly like this:
+     OFI [Clause ID] [Clause Name]
+     OBSERVATION: [Observation based on REASON_EDITED]
+     RECOMMENDATION: [Suggestion text from SUGGESTION_EDITED using soft language like SHOULD/CONSIDER]
+   
+IMPORTANT: DO NOT USE ANY MARKDOWN SYNTAX (like *, #, -, etc.). Output plain text only.`;
+
+                try {
+                    
+                    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: "You are an ISO Lead Auditor. Output a professional, detailed, plain text report in English only." }] } };
+                    
+                    const reportText = await callGemini(payload, false);
+                    
+                    const cleanReport = reportText
+                        .replace(/\*/g, '')      
+                        .replace(/#/g, '')      
+                        .replace(/_/g, '')      
+                        .replace(/^-/gm, '-')   
+                        .replace(/[\[\]]/g, ''); 
+                        
+                    setFinalReportText(cleanReport); 
+                    setLayoutMode('report'); 
+
+                } catch (error) {
+                    setAiError(`Report Generation Failed: ${error.message}`);
+                    setFinalReportText(`ERROR: Report Generation Failed. Please check API Key and ensure sufficient context/evidence is provided. Details: ${error.message}`); 
+                    setIsAnalysisSuccess(false); 
+                    setLayoutMode('report'); 
+                } finally {
+                    setIsReportLoading(false);
+                }
+            };
+
+            const handleDownloadReport = () => {
+                const companyName = cleanFileName(auditInfo.company) || 'Company';
+                const auditType = cleanFileName(auditInfo.type) || 'Audit';
+                const smo = cleanFileName(auditInfo.smo) || 'SMO';
+                const department = cleanFileName(auditInfo.department) || 'Dept'; 
+                const auditor = cleanFileName(auditInfo.auditor) || 'Auditor';     
+                const dateStr = new Date().toISOString().substring(0, 10).replace(/-/g, ''); 
+                const standardCode = (standard.split(':')[0] || 'ISO').replace('/', '_');
+                
+                const element = document.createElement("a");
+                const file = new Blob([finalReportText], {type: 'text/plain'});
+                element.href = URL.createObjectURL(file);
+                element.download = `${standardCode}_${auditType}_${smo}_${companyName}_Audit_Note_${department}_${auditor}_${dateStr}.txt`; 
+                document.body.appendChild(element);
+                element.click(); 
+            };
+            
+            // --- RENDER HELPERS ---
+            
+            const renderAnalyzeToast = () => {
+                if (!showToast || isAnalysisSuccess === null) return null;
+                
+                const isSuccess = isAnalysisSuccess === true;
+                const message = isSuccess ? "Phân tích hoàn tất!" : `Lỗi: ${aiError || "Lỗi không xác định."}`;
+                const baseClasses = "fixed top-6 right-6 z-[10000] px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 text-sm font-medium animate-fade-in-up transition-opacity";
+                const successClasses = "bg-white dark:bg-slate-800 border-l-4 border-emerald-500 text-slate-800 dark:text-white";
+                const errorClasses = "bg-red-50 dark:bg-red-900 border-l-4 border-red-500 text-red-800 dark:text-red-300";
+
+                return (
+                    <div className={`${baseClasses} ${isSuccess ? successClasses : errorClasses}`}>
+                        <span className={isSuccess ? "text-emerald-500" : "text-red-500"}>
+                            <Icon name={isSuccess ? "CheckCircle2" : "AlertCircle"} size={20}/>
+                        </span>
+                        {message}
+                    </div>
+                );
+            };
+
+            const toggleClause = (id) => setSelectedClauses(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+            const toggleGroup = (id) => setExpandedGroups(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+            
+            // CẬP NHẬT MÀU SẮC CHO ICON NHÓM (GREEN)
+            const getGroupIconColor = (iconName) => {
+                switch(iconName) {
+                    case 'LayoutList': return 'text-blue-600 dark:text-blue-400'; 
+                    case 'FileShield': return 'text-purple-600 dark:text-purple-400'; 
+                    case 'Users': return 'text-emerald-600 dark:text-emerald-400'; 
+                    case 'Lock': return 'text-rose-600 dark:text-rose-400'; 
+                    case 'Cpu': return 'text-cyan-600 dark:text-cyan-400'; 
+                    case 'CheckThick': return 'text-green-600 dark:text-green-400'; 
+                    default: return 'text-gray-500 dark:text-slate-400';
+                }
+            };
+
+            const renderClauses = () => {
+                const currentSearchQuery = searchQuery.toLowerCase();
+                
+                if (!standard || !allStandards[standard]) return <div className="text-center text-gray-400 mt-20 italic">Select a Standard</div>;
+                const data = allStandards[standard];
+                return data.groups.map(g => {
+                    const filtered = g.clauses.filter(c => 
+                        !currentSearchQuery || 
+                        c.code.toLowerCase().includes(currentSearchQuery) || 
+                        c.title.toLowerCase().includes(currentSearchQuery)
+                    );
+                    
+                    if (filtered.length === 0) return null;
+                    
+                    const isExpanded = expandedGroups.includes(g.id) || currentSearchQuery;
+                    
+                    const allClauseIdsInGroup = g.clauses.map(c => c.id);
+                    const isGroupSelected = allClauseIdsInGroup.every(id => selectedClauses.includes(id));
+                    const isGroupPartiallySelected = !isGroupSelected && allClauseIdsInGroup.some(id => selectedClauses.includes(id));
+
+                    return (
+                        <div key={g.id} className="mb-3 border border-gray-100 dark:border-slate-800 rounded-lg p-3 bg-white dark:bg-slate-900 hover:border-indigo-200 dark:hover:border-indigo-900 transition-shadow hover:shadow-md">
+                            <div className="flex items-center justify-between p-3.5 bg-gray-50/50 dark:bg-slate-800/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors" onClick={() => toggleGroup(g.id)}>
+                                <div className="flex items-center gap-3">
+                                    <button 
+                                        className={`p-1.5 rounded-lg shadow-sm group-select-icon transition-all border border-transparent ${isGroupSelected ? 'bg-emerald-600 text-white selected border-emerald-700' : 'bg-white dark:bg-slate-700'}`} 
+                                        onClick={(e) => { e.stopPropagation(); toggleAllClausesInGroup(g.id); }} 
+                                        title="Chọn/Bỏ chọn tất cả"
+                                    >
+                                        {isGroupSelected ? <CheckLineart size={16} className="stroke-white"/> : <Icon name={g.icon} size={16} className={isGroupSelected ? '' : getGroupIconColor(g.icon)}/>}
+                                        {isGroupPartiallySelected && !isGroupSelected && (
+                                            <span className="absolute top-0 right-0 w-2 h-2 bg-indigo-500 rounded-full border border-white dark:border-slate-900"></span>
+                                        )}
+                                    </button>
+                                    <h4 className="text-xs font-bold text-gray-700 dark:text-slate-200 uppercase tracking-wider">{g.title}</h4>
+                                </div>
+                                <Icon name={isExpanded ? "ChevronUp" : "ChevronDown"} size={14} className="text-gray-400"/>
+                            </div>
+                            {isExpanded && <div className="p-2 space-y-1 bg-white dark:bg-slate-900 border-t dark:border-slate-800">
+                                {filtered.map(c => (
+                                    <ClauseItem 
+                                        key={c.id} 
+                                        clause={c} 
+                                        isSelected={selectedClauses.includes(c.id)}
+                                        onToggle={toggleClause}
+                                        onCopy={handleSmartCopy}
+                                    />
+                                ))}
+                            </div>}
+                        </div>
+                    );
+                });
+            };
+            
+            // --- NEW: Tính toán trạng thái Findings cuối cùng (Classification) ---
+            const getFinalStatusDetails = useCallback((clauseId) => {
+                 const detail = findingDetails[clauseId] || {};
+                 
+                 let classification = detail.classification || 'N_A'; 
+                 const originalStatus = analysisResult?.find(r => r.clauseId === clauseId)?.status;
+
+                 if (!detail.classification) {
+                      if (originalStatus === 'NON_COMPLIANT' || originalStatus === 'WARNING') {
+                         classification = 'NC_Minor';
+                      } else {
+                         classification = 'N_A';
+                      }
+                 }
+                 
+                 let type = 'N/A';
+                 let grade = 'N/A';
+                 
+                 if (classification === 'NC_Major') {
+                     type = 'NC'; grade = 'Major'; 
+                 } else if (classification === 'NC_Minor') {
+                     type = 'NC'; grade = 'Minor'; 
+                 } else if (classification === 'OFI') {
+                     type = 'OFI'; grade = 'N/A'; 
+                 } else { // N_A (Compliance)
+                     type = 'N/A'; grade = 'N/A'; 
+                 }
+                 
+                 return { type, grade, classification };
+            }, [analysisResult, findingDetails]);
+
+
+            const findingsStats = useMemo(() => {
+                const stats = { OFI: 0, NC_Minor: 0, NC_Major: 0 };
+                
+                Object.keys(selectedSuggestions).forEach(clauseId => {
+                    if (selectedSuggestions[clauseId]) {
+                        const { type, grade } = getFinalStatusDetails(clauseId);
+
+                        if (type === 'OFI') {
+                            stats.OFI++;
+                        } else if (type === 'NC') {
+                            if (grade === 'Major') {
+                                stats.NC_Major++;
+                            } else if (grade === 'Minor') {
+                                stats.NC_Minor++;
+                            }
+                        }
+                    }
+                });
+                return stats;
+            }, [selectedSuggestions, getFinalStatusDetails]);
+
+            // --- Finding Node Bar Logic ---
+            const getFindingNodeColor = useCallback((index) => {
+                const item = analysisResult[index];
+                if (!item) return 'bg-gray-400';
+
+                const { type, grade } = getFinalStatusDetails(item.clauseId);
+                const isSelected = !!selectedSuggestions[item.clauseId];
+                
+                let colorClasses = '';
+                
+                // 1. Màu nền (Background Color)
+                if (isSelected) {
+                    if (type === 'NC') {
+                        colorClasses = grade === 'Major' ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-500 hover:bg-amber-600';
+                    } else if (type === 'OFI') {
+                        colorClasses = 'bg-amber-400 hover:bg-amber-500';
+                    } else {
+                        colorClasses = 'bg-emerald-500 hover:bg-emerald-600';
+                    }
+                } else {
+                    colorClasses = 'bg-gray-300 dark:bg-slate-700 hover:bg-gray-400 dark:hover:bg-slate-600';
+                }
+
+                // 2. Màu chữ (Text Color)
+                let finalTextColor = 'text-slate-700 dark:text-slate-300';
+                if(isSelected) { 
+                    finalTextColor = 'text-white'; 
+                } else if (colorClasses.includes('bg-gray-300')) {
+                    finalTextColor = 'text-slate-700';
+                }
+                
+                // 3. Ring (Viền) cho Node đang được xem (findingStartIndex)
+                const ringClass = index === findingStartIndex ? 'ring-2 ring-offset-2 ring-indigo-500/80 ring-offset-gray-50 dark:ring-offset-slate-950' : '';
+                
+                
+                return `${colorClasses} ${finalTextColor} ${ringClass}`;
+
+            }, [analysisResult, selectedSuggestions, getFinalStatusDetails, findingStartIndex]);
+            
+            // Hàm chuyển đổi Classification
+            const getClassificationSelectClasses = (classification) => {
+                 const base = "custom-status-select px-3 py-2 rounded-xl text-sm outline-none transition-all w-full";
+                 if (classification === 'NC_Major') return `${base} bg-red-50 text-red-700 border border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700`;
+                 if (classification === 'NC_Minor' || classification === 'OFI') return `${base} bg-amber-50 text-amber-700 border border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700`;
+                 return `${base} bg-emerald-50 text-emerald-700 border border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700`;
+            };
+            
+            // NEW: Hàm lấy Clause ID rút gọn
+            const getShortClauseId = (fullId) => {
+                return fullId;
+            };
+
+            // ADDED: Xử lý sự kiện dán ảnh toàn cục để kích hoạt OCR
+            useEffect(() => {
+                const handleGlobalPaste = (e) => {
+                    const items = e.clipboardData.items;
+                    let hasImage = false;
+                    const newImages = [];
+                    for (let i = 0; i < items.length; i++) {
+                        if (items[i].type.indexOf("image") !== -1) { 
+                            hasImage = true; 
+                            newImages.push(items[i].getAsFile());
+                        }
+                    }
+                    if (hasImage) {
+                        e.preventDefault(); 
+                        setPastedImages(prev => [...prev, ...newImages]);
+                        setLayoutMode('evidence');
+                    }
+                };
+                
+                // Lắng nghe sự kiện paste trên window
+                window.addEventListener('paste', handleGlobalPaste);
+                
+                return () => {
+                    // Dọn dẹp sự kiện khi component unmount
+                    window.removeEventListener('paste', handleGlobalPaste);
+                };
+            }, []); // Chỉ chạy một lần khi component mount
+
+
+            return (
+                <div className="flex flex-col h-screen w-full bg-gray-100 dark:bg-slate-900 selection:bg-indigo-100 selection:text-indigo-900 transition-colors duration-200">
+                    
+                    {/* --- TOAST --- */}
+                    {copySuccess && <div className="fixed top-6 right-6 z-[10000] bg-white dark:bg-slate-800 border-l-4 border-emerald-500 text-slate-800 dark:text-white px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 text-sm font-medium animate-fade-in-up transition-opacity"><span className="text-emerald-500"><Icon name="CheckCircle2" size={20}/></span> Copied!</div>}
+                    {renderAnalyzeToast()} 
+
+                    {/* --- SETUP MODAL (FIXED: Gọi saveApiKey) --- */}
+                    <Modal isOpen={showSetup} title="Welcome to ISO Audit AI" onClose={() => {}}>
+                         <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">Please enter your Google Gemini API Key to continue. This key is stored locally on your device.</p>
+                         {/* Dùng state riêng cho input API Key tạm thời */}
+                         <IconInput icon="Key" placeholder="Paste API Key here..." value={apiKey} onChange={e => setApiKey(e.target.value)} className="mb-4"/>
+                         <button onClick={() => saveApiKey(apiKey)} disabled={!apiKey} className="w-full h-10 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center" title="Save & Start">
+                            <Icon name="Save" size={20}/>
+                         </button>
+                         <div className="mt-4 text-xs text-center text-gray-400">Get key at <a href="[https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)" target="_blank" className="text-indigo-500 underline">Google AI Studio</a></div>
+                    </Modal>
+
+                    {/* --- SETTINGS MODAL (FIXED: Gọi saveApiKey) --- */}
+                    <Modal isOpen={showSettings} title="Settings" onClose={() => setShowSettings(false)}>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold mb-1 uppercase text-gray-500">API Key</label>
+                                <IconInput icon="Key" value={apiKey} onChange={e => setApiKey(e.target.value)}/>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold mb-1 uppercase text-gray-500">AI Model</label>
+                                <select className="w-full p-2 bg-gray-50 dark:bg-slate-800 border rounded-xl text-sm" value={modelId} onChange={e => setModelId(e.target.value)}>
+                                    <option value="gemini-2.5-flash-preview-09-2025">Gemini 1.5 Flash (Fastest)</option>
+                                    <option value="gemini-1.5-pro-latest">Gemini 1.5 Pro (Smarter)</option>
+                                </select>
+                            </div>
+                            
+                            <button onClick={() => {saveApiKey(apiKey); setShowSettings(false)}} className="w-full h-10 py-2 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 flex items-center justify-center" title="Save Changes">
+                                <Icon name="Save" size={20}/>
+                            </button>
+                        </div>
+                    </Modal>
+
+                    {/* --- ABOUT MODAL (WITH WORKFLOW) --- */}
+                    <ReleaseNotesModal isOpen={showAboutModal} onClose={() => setShowAboutModal(false)} />
+
+                    {/* --- IMPORT STANDARD MODAL --- */}
+                    <Modal isOpen={showImportModal} title="Import New Standard" onClose={() => setShowImportModal(false)}>
+                         <div className="space-y-4">
+                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg text-xs text-indigo-700 dark:text-indigo-300">
+                                <span className="font-bold">AI Power:</span> Upload images of your standard (PDF screenshots) or paste text. The AI will automatically structure it for auditing.
+                            </div>
+                            
+                            <textarea className="w-full h-32 p-3 bg-gray-50 dark:bg-slate-800 border rounded-xl text-xs font-mono" placeholder="Paste text from Word/PDF here..." value={importText} onChange={e => setImportText(e.target.value)}></textarea>
+                            
+                            <div className="border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl p-4 text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800" onPaste={(e) => {
+                                const items = e.clipboardData.items;
+                                const files = [];
+                                for (let i=0; i<items.length; i++) if (items[i].type.indexOf("image") !== -1) files.push(items[i].getAsFile());
+                                setImportImages([...importImages, ...files]);
+                            }}>
+                                <Icon name="Image" className="mx-auto text-gray-400 mb-2"/>
+                                <p className="text-xs font-medium">Drag & Drop or <span className="font-bold">Paste (Ctrl+V)</span> images of standard pages here.</p>
+                                <div className="flex gap-2 justify-center mt-2 flex-wrap">
+                                    {importImages.map((img, i) => <span key={i} className="text-[10px] bg-gray-200 dark:bg-slate-700 px-2 py-1 rounded truncate max-w-[100px]">{img.name || "image.png"}</span>)}
+                                </div>
+                            </div>
+                            
+                            <button onClick={handleImportProcess} disabled={!!importStatus || (!importText && importImages.length === 0)} className="w-full h-10 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 flex justify-center gap-2 items-center" title="Process & Add Standard">
+                                {importStatus ? <><Icon name="Loader" className="animate-spin"/> {importStatus}</> : <Icon name="Plus" size={20}/>}
+                            </button>
+                         </div>
+                    </Modal>
+
+                    {/* --- BLOCK 0: GLOBAL HEADER --- (NEW BLOCK) */}
+                    <div className="flex-shrink-0 px-6 py-3 border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg z-20">
+                        <div className="flex justify-between items-center h-14">
+                            {/* LEFT: LOGO + TITLE + AI Powered (Moved from Block 1) */}
+                            <div className="flex items-center gap-4">
+                                {/* LOGO + FIXED 3: Animated Star */}
+                                <div className="relative flex items-center text-indigo-600 cursor-pointer hover:scale-105 transition-transform">
+                                    <div className={`text-orange-500 transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isSidebarOpen ? 'rotate-[360deg]' : 'rotate-0'}`} onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+                                        <Icon name="TDSolidLink" size={48}/> 
+                                    </div>
+                                     {/* Ngôi sao xoay theo quỹ đạo đường cong của logo */}
+                                    <div className="absolute top-1 left-1 w-6 h-6 z-10 pointer-events-none">
+                                        <Icon name="Sparkle" size={10} className="text-white animate-star-orbit drop-shadow-[0_0_2px_rgba(255,255,255,0.8)]"/>
+                                    </div>
+                                </div>
+                                {/* Title */}
+                                <div className="flex flex-col items-start -my-1">
+                                    <h1 className="font-extrabold text-2xl text-slate-800 dark:text-slate-100">
+                                        ISO Audit Assistant
+                                    </h1>
+                                    <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 flex items-center gap-1 mt-0.5">
+                                        <Icon name="AIIndicator" size={18} className="text-amber-400 animate-pulse"/> 
+                                        AI Powered
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* RIGHT: ABOUT Button (Moved from Sidebar) + Utilities */}
+                            <div className="flex items-center gap-3">
+                                {/* REMOVED: Version text */}
+                                <button onClick={handleRefresh} className="p-2 rounded-xl bg-gray-50 dark:bg-slate-800 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all shadow-sm" title="New Session"><Icon name="FilePlus2" size={18}/></button>
+                                <button onClick={handleRecall} className="p-2 rounded-xl bg-gray-50 dark:bg-slate-800 hover:bg-indigo-50 text-gray-400 hover:text-indigo-500 transition-all shadow-sm" title="Recall Session"><Icon name="History" size={18}/></button>
+                                <button onClick={toggleDarkMode} className="p-2 rounded-xl bg-gray-50 dark:bg-slate-800 hover:bg-amber-50 text-gray-400 hover:text-amber-500 dark:hover:text-amber-300 transition-all shadow-sm" title="Toggle Theme"><Icon name={isDarkMode ? "Sun" : "Moon"} size={18}/></button>
+                                
+                                {/* FIXED 2: Khôi phục nút Tăng Giảm Cỡ chữ lên Header Bar */}
+                                <FontSizeController fontSizeScale={fontSizeScale} adjustFontSize={adjustFontSize} />
+                                
+                                <button onClick={() => setShowSettings(true)} className="p-2 rounded-xl bg-gray-50 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-400 hover:text-slate-600 transition-all shadow-sm" title="Settings"><Icon name="Settings" size={18}/></button>
+                                
+                                {/* ABOUT BUTTON (Căn phải) */}
+                                <button onClick={() => setShowAboutModal(true)} className="p-2 rounded-xl bg-indigo-50 dark:bg-slate-800 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 transition-all shadow-sm flex items-center gap-2" title="About">
+                                    <Icon name="Info" size={18}/>
+                                    <span className="font-semibold hidden sm:inline text-adjustable-sm">ABOUT</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* MAIN LAYOUT (Sidebar + Content) */}
+                    <div className="flex flex-1 min-h-0 w-full">
+                        {/* SIDEBAR (Layer 1 - Top Z-Index) */}
+                        <div className={`${isSidebarOpen ? 'border-r' : 'w-0 border-0 overflow-hidden'} flex flex-col bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 shadow-[10px_0_30px_-10px_rgba(0,0,0,0.1)] z-50 relative shrink-0 transition-[width] duration-300 ease-in-out`} style={{ width: isSidebarOpen ? sidebarWidth : 0 }}>
+                            {isSidebarOpen && <div className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-indigo-500 transition-colors z-50 group" onMouseDown={startResizing}><div className="w-0.5 h-full bg-transparent group-hover:bg-indigo-400/50"></div></div>}
+                            
+                            {/* SIDEBAR HEADER (Simplified - Utility buttons moved to Block 0) */}
+                            <div className="p-5 border-b border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 min-w-[360px]">
+                                <div className="flex justify-between items-center mb-6">
+                                    {/* FIXED 4: Changed Master Data Icon to LayoutList */}
+                                    <div className="flex items-center gap-2 text-slate-400 select-none"><Icon name="LayoutList" size={20}/></div>
+                                </div>
+                                
+                                <div className="space-y-3">
+                                    <IconSelect icon="Book" value={standard} onChange={e => {
+                                        if (e.target.value === "ADD_NEW") setShowImportModal(true);
+                                        else setStandard(e.target.value);
+                                    }} options={[...Object.keys(allStandards).map(k => ({ value: k, label: allStandards[k].name })), {value: "ADD_NEW", label: "+ Add New Standard..."}]} defaultText="Select ISO Standard" />
+
+                                    <div className="space-y-1">
+                                        <IconSelect icon="Tag" value={auditInfo.type} onChange={e => setAuditInfo({...auditInfo, type: e.target.value})} options={Object.keys(AUDIT_TYPES).map(key => ({ value: key, label: key }))} defaultText="Select Audit Type" />
+                                        {auditInfo.type && (
+                                            <div className="mx-1 p-2 bg-indigo-50/50 dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 rounded-lg flex items-start justify-between gap-2 group animate-in fade-in slide-in-from-top-1">
+                                                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug flex-1 italic">{AUDIT_TYPES[auditInfo.type]}</p>
+                                                <button onClick={() => handleSmartCopy(AUDIT_TYPES[auditInfo.type])} className="text-gray-400 hover:text-indigo-500 transition-colors p-1 rounded-md hover:bg-white dark:hover:bg-slate-700 shadow-sm opacity-0 group-hover:opacity-100 focus:opacity-100" title="Copy Description"><Icon name="Copy" size={12}/></button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {/* FIXED 1: Icon "Building" for Company */}
+                                        <IconInput icon="Building" placeholder="Company" value={auditInfo.company} onChange={e => setAuditInfo({...auditInfo, company: e.target.value})} />
+                                        {/* FIXED 5: Changed SMO Icon to Tag */}
+                                        <IconInput icon="Tag" placeholder="SMO (Audit ID)" value={auditInfo.smo} onChange={e => setAuditInfo({...auditInfo, smo: e.target.value})} />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <IconInput icon="Users" placeholder="Department" value={auditInfo.department} onChange={e => setAuditInfo({...auditInfo, department: e.target.value})} />
+                                        {/* FIXED 1: Icon "User" for Interviewee */}
+                                        <IconInput icon="User" placeholder="Interviewee" value={auditInfo.interviewee} onChange={e => setAuditInfo({...auditInfo, interviewee: e.target.value})} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 flex flex-col min-h-0 bg-gray-50/50 dark:bg-slate-950 min-w-[360px]">
+                                <div className="p-3 border-b border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm z-10">
+                                    <IconInput icon="AuditUser" placeholder="Auditor Name" value={auditInfo.auditor} onChange={e => setAuditInfo({...auditInfo, auditor: e.target.value})} className="mb-3"/>
+
+                                    <div className="relative flex-1 group flex items-center gap-2">
+                                        <div className="relative flex-1">
+                                            <span className="absolute left-3 top-2.5 text-gray-400"><Icon name="Search" size={16}/></span>
+                                            <input 
+                                                className="w-full pl-9 pr-3 py-2 text-sm bg-gray-100 dark:bg-slate-800 rounded-xl outline-none text-slate-800 dark:text-slate-200 placeholder-gray-400" 
+                                                placeholder="Search clauses..." 
+                                                value={searchQueryRaw} 
+                                                onChange={e => setSearchQueryRaw(e.target.value)}
+                                                onFocus={(e) => e.target.select()} /* Thêm onFocus để select toàn bộ text khi click */
+                                            />
+                                        </div>
+                                        {selectedClauses.length > 0 && <button onClick={handleCopySelectedClauses} className="p-2 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-100" title="Copy Selected Clauses"><Icon name="Copy" size={18} /></button>}
+                                        {selectedClauses.length > 0 && <button onClick={() => setSelectedClauses([])} className="relative p-2 rounded-xl bg-white text-red-500 hover:bg-red-50 border border-gray-200" title="Clear Selected Clauses"><Icon name="Trash2" size={18} /><span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold px-1 rounded-full">{selectedClauses.length}</span></button>}
+                                    </div>
+                                </div>
+                                
+                                <div ref={scrollContainerRef} className="clause-scroll-container p-3 custom-scrollbar">{renderClauses()}</div>
+                            </div>
+
+                        </div>
+
+                        {/* MAIN CONTENT (Layer 2 - Lower Z-Index) */}
+                        <div className="flex-1 flex flex-col h-full transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] min-w-0 z-0">
+                            {/* 1. EVIDENCE (BLOCK 1) */}
+                            <div className={`flex flex-col bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) shadow-xl
+                                ${layoutMode === 'evidence' || layoutMode === 'split' ? 'block-grow' : 'block-shrink'}`}>
+                                
+                                {/* HEADER BLOCK 1: Title Adjusted to text-lg and lighter color */}
+                                <div className="px-6 py-3 border-b border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-between items-center shadow-sm z-10">
+                                    <h3 className="font-semibold text-lg text-slate-500 dark:text-slate-400 flex items-center gap-3">
+                                        <span className="bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold shadow-sm">1</span> 
+                                        Audit Notes
+                                    </h3>
+                                    <button onClick={() => setLayoutMode(layoutMode === 'evidence' ? 'split' : 'evidence')} className="text-gray-400 hover:text-indigo-600 transition-colors p-2 rounded-lg" title={layoutMode === 'evidence' ? "Minimize" : "Maximize"}><Icon name={layoutMode === 'evidence' ? "CollapsePanel" : "ExpandPanel"}/></button>
+                                </div>
+                                
+                                <div className="flex-1 p-5 flex flex-col min-h-0 relative bg-gray-50/30 dark:bg-slate-950">
+                                    {/* IMAGE DROPZONE - Khung nét đứt gạch */}
+                                    <div ref={dropZoneRef} onDrop={handleDrop} className={`mb-4 p-4 border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition-all duration-300 group ${pastedImages.length > 0 ? 'border-emerald-400 bg-emerald-50/50 dark:bg-emerald-900/10' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900'}`}>
+                                        
+                                        {/* Container chứa nút Browse File và OCR */}
+                                        <div className="w-full flex items-center justify-between gap-4">
+                                            {/* File previews (chỉ hiện khi có ảnh) */}
+                                            {pastedImages.length > 0 ? (
+                                                <div className="flex-1 flex gap-3 overflow-x-auto pb-2 custom-scrollbar p-1">
+                                                    {pastedImages.map((file, idx) => (
+                                                        <div key={idx} className="relative group/img shrink-0">
+                                                            <img src={URL.createObjectURL(file)} alt="preview" className="h-14 w-14 object-cover rounded-lg shadow-sm border-2 border-white dark:border-slate-700"/>
+                                                            {/* START FIX: Cải thiện nút X (Cancel/Remove) */}
+                                                            <button 
+                                                                onClick={() => removeImage(idx)} 
+                                                                className="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full p-0.5 w-5 h-5 flex items-center justify-center opacity-90 group-hover/img:opacity-100 hover:scale-110 transition-all shadow-md border-2 border-white dark:border-slate-900"
+                                                                title="Remove File"
+                                                            >
+                                                                <Icon name="X" size={10}/>
+                                                            </button>
+                                                            {/* END FIX: Cải thiện nút X (Cancel/Remove) */}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                /* Placeholder khi KHÔNG có ảnh */
+                                                <div className="text-center text-gray-400 pointer-events-none group-hover:text-indigo-500 transition-colors flex-1">
+                                                    <Icon name="Image" size={28} className="mx-auto mb-2 opacity-50 group-hover:opacity-100 transition-opacity"/>
+                                                    <p className="text-adjustable-xs font-medium">Drag & Drop or <span className="font-bold">Paste (Ctrl+V)</span></p>
+                                                </div>
+                                            )}
+
+                                            {/* OCR & BROWSE BUTTONS (Luôn hiển thị) */}
+                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                                <input ref={fileInputRef} type="file" multiple accept="image/*" onChange={handleFileSelect} className="hidden" />
+                                                <button onClick={() => fileInputRef.current.click()} className="relative p-2.5 rounded-xl shadow-md transition-all active:scale-95 border-2 border-white dark:border-slate-800 bg-indigo-500 hover:bg-indigo-600 text-white" title="Browse Files">
+                                                    <Icon name="UploadCloud" size={20}/>
+                                                </button>
+                                                
+                                                {/* Nút OCR (chỉ hiện khi có ảnh) */}
+                                                {pastedImages.length > 0 && (
+                                                    <div className="relative">
+                                                        {/* FIXED 1: Bật lại Icon ScanText cho OCR button */}
+                                                        <button onClick={handleOcrUpload} disabled={isOcrLoading} className={`relative overflow-hidden p-2.5 rounded-xl shadow-md transition-all active:scale-95 border-2 border-white dark:border-slate-800 ${isOcrLoading ? 'bg-slate-700 text-white' : 'bg-emerald-500 hover:bg-emerald-600 text-white'}`} title="Start OCR Scan">
+                                                            {isOcrLoading ? <SparkleLoader size={20}/> : <Icon name="ScanText" size={20}/>}
+                                                            {isOcrLoading && <div className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-400/50 to-transparent w-full h-[20%] animate-scan-line pointer-events-none"></div>}
+                                                        </button>
+                                                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 rounded-full shadow border-2 border-white dark:border-slate-900 animate-bounce-slight">{pastedImages.length}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="relative flex-1 mb-4">
+                                         {/* FONT CONTROL CHIP - Block 1 (FIXED 2: Đã bị xóa) */}
+                                         {/* Logic này đã được chuyển lên Global Header để tránh lặp và giữ UI clean */}
+                                         {/* XÓA LOGIC TĂNG GIẢM CỠ CHỮ TRONG TEXTAREA */}
+                                         {/* END FONT CONTROL CHIP */}
+
+                                         <textarea 
+                                             ref={evidenceRef} // Thêm ref
+                                             className="w-full h-full p-5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-adjustable-sm font-mono leading-relaxed focus:ring-2 focus:ring-indigo-100 outline-none resize-none shadow-sm dark:text-slate-200 placeholder-gray-300 transition-shadow" 
+                                             placeholder="Enter interview notes..." 
+                                             value={evidence} 
+                                             onChange={(e) => { 
+                                                 setEvidence(e.target.value); 
+                                                 handleCursorChange(e); // Cập nhật vị trí con trỏ khi gõ
+                                             }}
+                                             onSelect={handleCursorChange} // Cập nhật vị trí con trỏ khi chọn/di chuyển
+                                             onFocus={handleCursorChange} // Cập nhật vị trí con trỏ khi focus
+                                         ></textarea>
+                                    </div>
+                                    
+                                    {/* Lỗi Analyze Noti (Block 1) */}
+                                    {analyzeErrorInBlock1 && (
+                                         <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 gap-3 flex text-sm animate-in fade-in">
+                                             <Icon name="AlertCircle" size={20}/>
+                                             <div>
+                                                 <strong className="text-adjustable-sm">Lỗi Phân Tích:</strong> {aiError}. Vui lòng kiểm tra lại Clause đã chọn và nhấn Analyze lại.
+                                             </div>
+                                         </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* NEW: ANALYZE BUTTON CONTAINER - Đặt riêng giữa Block 1 và Block 2 */}
+                            {/* FIXED 3: Đảm bảo pointer-events-auto luôn hoạt động khi nút không disabled */}
+                            {hasEvidence && (layoutMode === 'evidence' || layoutMode === 'split') && (
+                                <div className="flex justify-center -translate-y-7 z-[2] flex-shrink-0">
+                                    <button 
+                                        onClick={handleAnalyzePrompt} 
+                                        disabled={isAnalyzeDisabled} 
+                                        className={`w-14 h-14 rounded-full shadow-2xl hover:shadow-indigo-600/60 btn-brain-wave text-white flex items-center justify-center transition-all active:scale-90 pointer-events-auto ${isAnalyzeDisabled ? 'opacity-80 cursor-not-allowed' : 'hover:scale-110'}`}
+                                        title="Click to Analyze"
+                                    >
+                                        {isAnalyzeLoading ? <SparkleLoader size={24}/> : <Icon name="Wand2" size={24}/>}
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* 2. FINDINGS (BLOCK 2) */}
+                            <div className={`flex flex-col bg-slate-50 dark:bg-slate-950 border-b border-gray-200 dark:border-slate-800 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) shadow-lg
+                                ${layoutMode === 'findings' || layoutMode === 'split' ? 'block-grow' : 'block-shrink'}`}>
+                                
+                                {/* HEADER BLOCK 2: Title Adjusted to text-lg and lighter color */}
+                                <div className="px-6 py-3 border-b dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center shadow-sm z-10">
+                                    <div className="block-2-header-content">
+                                        <div className="block-2-header-title-container">
+                                            <h3 className="font-semibold text-lg text-slate-500 dark:text-slate-400 flex items-center gap-3">
+                                                <span className="bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold shadow-sm">2</span>
+                                                Results & Report
+                                            </h3>
+                                        </div>
+                                        
+                                        {/* Thống kê Findings chi tiết (Căn giữa) */}
+                                        {analysisResult && (
+                                            <div className="block-2-stats-box-wrapper">
+                                                 <div className="flex items-center gap-3 text-adjustable-xs font-bold p-1 rounded-xl bg-gray-50 dark:bg-slate-800 shadow-inner border border-gray-200 dark:border-slate-700">
+                                                    <span className="font-medium text-amber-400 dark:text-amber-400">
+                                                        OFI: <strong className="font-extrabold">{findingsStats.OFI}</strong>
+                                                    </span>
+                                                    <div className="h-4 w-px bg-gray-300 dark:bg-slate-700 mx-1"></div>
+                                                    <span className="font-medium text-amber-500 dark:text-amber-400">
+                                                        NC Minor: <strong className="font-extrabold">{findingsStats.NC_Minor}</strong>
+                                                    </span>
+                                                    <div className="h-4 w-px bg-gray-300 dark:bg-slate-700 mx-1"></div>
+                                                    <span className="font-medium text-red-500 dark:text-red-400">
+                                                        NC Major: <strong className="font-extrabold">{findingsStats.NC_Major}</strong>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                            
+                                            {/* NÚT BỎ CHỌN TẤT CẢ */}
+                                            {selectedFindingCount > 0 && (
+                                                 <button onClick={handleRemoveAllFindings} className="w-10 h-10 p-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white shadow-md transition-all active:scale-95 relative" title={`Bỏ chọn ${selectedFindingCount} Findings`}>
+                                                    <Icon name="Trash2" size={18} className="stroke-white"/>
+                                                    <span className="absolute -top-1 -right-1 bg-white text-red-500 text-[9px] font-bold px-1 rounded-full border border-red-500">{selectedFindingCount}</span>
+                                                </button>
+                                            )}
+                                            
+                                            {/* GENERATE/RETRY BUTTON (ICON ONLY) */}
+                                             {analysisResult && (
+                                                 <button 
+                                                    onClick={() => handleGenerateReport(true)} 
+                                                    className="w-10 h-10 rounded-xl bg-indigo-600 text-white shadow-md transition-all active:scale-95 hover:bg-indigo-700 flex items-center justify-center" 
+                                                    title={finalReportText && finalReportText.startsWith('ERROR:') ? 'Retry Generate Report' : 'Generate Report'} 
+                                                >
+                                                    <Icon name="FileText" size={20}/>
+                                                </button>
+                                            )}
+
+                                            {/* MAXIMIZE / MINIMIZE BUTTON */}
+                                            <button onClick={() => setLayoutMode(layoutMode === 'findings' ? 'split' : 'findings')} className="w-10 h-10 text-gray-400 hover:text-emerald-600 transition-colors p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800" title={layoutMode === 'findings' ? "Minimize" : "Maximize"}><Icon name={layoutMode === 'findings' ? "CollapsePanel" : "ExpandPanel"}/></button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* CRITICAL SCROLL FIX: Áp dụng flex-1 min-h-0 cho nội dung cuộn */}
+                                <div className="flex-1 p-6 flex flex-col gap-4 bg-gray-50/50 dark:bg-slate-950 relative min-h-0">
+                                    
+                                    {/* Container cho nội dung cuộn */}
+                                    <div className="flex-1 min-h-0 relative flex flex-col"> 
+                                        <div ref={findingsScrollRef} className="results-scroll-container space-y-4 flex-1"> 
+                                            
+                                            {/* Placeholder khi chưa có kết quả phân tích */}
+                                            {(!analysisResult) && (
+                                                <div className="absolute inset-0 flex flex-col justify-center items-center opacity-70 w-full h-full">
+                                                    <Icon name="LayoutList" size={32} className="text-gray-400 dark:text-slate-600 mb-4"/>
+                                                    <p className="text-adjustable-sm text-gray-500 dark:text-slate-400">Select Clauses > Input Evidence > Analyze</p>
+                                                </div>
+                                            )}
+                                            
+                                            {/* Hiển thị Findings Card */}
+                                            {analysisResult && currentFinding ? ( 
+                                                (() => {
+                                                    const findingId = currentFinding.clauseId;
+                                                    const defaultStatus = currentFinding.status;
+                                                    const findingDetail = findingDetails[findingId] || {};
+                                                    
+                                                    const { type: currentType, grade: currentGrade, classification: currentClassification } = getFinalStatusDetails(findingId);
+                                                    
+                                                    
+                                                    const handleClassificationChange = (e) => {
+                                                        updateFindingDetailClassification(currentFinding.clauseId, e.target.value);
+                                                    };
+                                                    
+                                                    const isSelectedForReport = !!selectedSuggestions[currentFinding.clauseId];
+                                                    const cardBorderClass = isSelectedForReport ? 'border-emerald-500 shadow-lg' : 'border-gray-200 dark:border-slate-800 shadow-md';
+                                                    
+                                                    
+                                                    // Status bar tag logic
+                                                    const getStatusBarClasses = () => {
+                                                         const status = defaultStatus;
+                                                         if (status === 'COMPLIANT') return 'bg-emerald-100 text-emerald-700';
+                                                         if (status === 'NON_COMPLIANT') return 'bg-red-100 text-red-700';
+                                                         return 'bg-amber-100 text-amber-700'; 
+                                                    }
+
+
+                                                    return (
+                                                        <div key={findingId} className={`p-6 rounded-xl border ${cardBorderClass} bg-white dark:bg-slate-900 transition-all flex flex-col h-full fade-in`}>
+                                                            
+                                                            {/* Header & Status & Close Button */}
+                                                            <div className="flex-shrink-0 flex justify-between items-start mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className={`mt-0.5 flex-shrink-0 p-1.5 rounded-full ${currentFinding.status === 'COMPLIANT' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>{currentFinding.status === 'COMPLIANT' ? <Icon name="CheckCircle2" size={20}/> : <Icon name="AlertCircle" size={20}/>}</div>
+                                                                    <div>
+                                                                         <div className="font-bold text-adjustable text-slate-800 dark:text-slate-200">{currentFinding.clauseId}</div>
+                                                                         <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md uppercase mt-1 inline-block ${getStatusBarClasses()}`}>AI: {defaultStatus}</span>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* NEW: Nút Loại bỏ/Thêm vào Report (Lineart) */}
+                                                                <button 
+                                                                    onClick={() => toggleSuggestion(currentFinding.clauseId)}
+                                                                    className={`w-10 h-10 flex items-center justify-center rounded-full shadow-md transition-all active:scale-90 ${isSelectedForReport ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-emerald-500 hover:bg-emerald-600 text-white'}`}
+                                                                    title="Chọn/Bỏ chọn Findings"
+                                                                >
+                                                                    {isSelectedForReport ? <Icon name="X" size={20}/> : <CheckLineart size={20} className="stroke-white stroke-[3px]"/>}
+                                                                </button>
+                                                            </div>
+
+                                                            {/* Content Area - Dùng Flex để chứa Reason/Suggestion/Evidence */}
+                                                            <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-3"> 
+                                                                
+                                                                {/* Reason Box (Không Title) - Sửa lại logic flex-grow: 1/1 + Background Fix */}
+                                                                <div className="p-3 rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-100/50 dark:bg-slate-800/50 flex flex-col flex-1 relative"> 
+                                                                     <span className="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 mb-1">Reason</span>
+                                                                     <textarea 
+                                                                        className="w-full p-2 border-0 rounded-lg text-adjustable-sm text-slate-700 dark:text-slate-200 outline-none shadow-inner flex-textarea"
+                                                                        placeholder="Reason: Edit AI assessment here..." 
+                                                                        value={currentFinding.reason}
+                                                                        onChange={(e) => updateAnalysisResult(currentFinding.clauseId, 'reason', e.target.value)}
+                                                                     />
+                                                                </div>
+                                                                
+                                                                {/* Audit Evidence Box (NEW) */}
+                                                                <div className="p-3 rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-100/50 dark:bg-slate-800/50 flex flex-col flex-1 relative"> 
+                                                                    <span className="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 mb-1">Audit Evidence</span>
+                                                                     <textarea 
+                                                                        className="w-full p-2 border-0 rounded-lg text-adjustable-sm text-slate-700 dark:text-slate-200 outline-none shadow-inner flex-textarea"
+                                                                        placeholder="Audit Evidence: Confirm collected documents/observations here..." 
+                                                                        value={currentFinding.evidence}
+                                                                        onChange={(e) => updateAnalysisResult(currentFinding.clauseId, 'evidence', e.target.value)}
+                                                                     />
+                                                                </div>
+
+                                                                {/* Suggestion Box */}
+                                                                {currentFinding.suggestion && (
+                                                                    <div className={`p-3 rounded-xl border transition-all flex flex-col flex-1 ${isSelectedForReport ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-gray-100/50 border-gray-100 dark:bg-slate-800/50 dark:border-slate-700'} relative`}> 
+                                                                        
+                                                                        {/* FIX 1: Đổi nhãn sang Tiếng Anh */}
+                                                                        <span className="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 mb-1">Suggestion</span>
+
+                                                                        <textarea 
+                                                                            className="w-full p-2 border-0 rounded-lg text-adjustable-sm text-slate-700 dark:text-slate-200 outline-none shadow-inner flex-textarea"
+                                                                            placeholder="Suggestion: Improvement/corrective action proposal..." 
+                                                                            value={currentFinding.suggestion}
+                                                                            onChange={(e) => updateAnalysisResult(currentFinding.clauseId, 'suggestion', e.target.value)}
+                                                                         />
+                                                                        
+                                                                        {/* Finding Details (Loại NC/OFI) - FIX NC GRADING */}
+                                                                        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-700 space-y-3 flex-shrink-0">
+                                                                            <h4 className="font-bold text-adjustable-xs uppercase text-slate-500 dark:text-slate-400">Classification</h4>
+                                                                            
+                                                                            {/* NEW: Single Classification Select - Rút ngắn text và Fix màu */}
+                                                                            <select 
+                                                                                value={currentClassification} 
+                                                                                onChange={handleClassificationChange}
+                                                                                className={getClassificationSelectClasses(currentClassification) + ' max-w-full md:max-w-[200px]'} 
+                                                                            >
+                                                                                <option value="N_A">Compliance (NA)</option>
+                                                                                <option value="OFI">OFI (Improvement)</option>
+                                                                                <option value="NC_Minor">NC Minor</option>
+                                                                                <option value="NC_Major">NC Major</option>
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })() 
+                                            ) : (
+                                                <></>
+                                            )}
+                                        </div>
+                                        
+                                        {/* NEW: NAVIGATION BAR CHO FINDINGS */}
+                                        {analysisResult && totalFindings > 0 && (
+                                            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-800 flex flex-col justify-center items-center flex-shrink-0">
+                                                
+                                                {/* Finding Nodes Bar (Multi-row Flexbox - FINAL FIX FOR EVEN SPACING) */}
+                                                <div className="w-full flex-shrink-0 mb-3 px-2"> 
+                                                    <div className="flex flex-wrap justify-center gap-x-3 gap-y-3"> 
+                                                        {analysisResult.map((item, index) => (
+                                                            <button 
+                                                                key={item.clauseId}
+                                                                onClick={() => handleNodeClick(index)}
+                                                                title={`Finding ${item.clauseId} (Status: ${item.status})`}
+                                                                className={`finding-node-button rounded-full flex items-center justify-center transition-all transform hover:scale-105 active:scale-95 px-2 py-1 ${getFindingNodeColor(index)}`}
+                                                            >
+                                                                {/* SỬA LỖI UI: CHỈ HIỂN THỊ INDEX THAY VÌ CLAUSE ID */}
+                                                                {index + 1} 
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 3. FINAL REPORT (BLOCK 3) */}
+                            <div className={`flex flex-col bg-white dark:bg-slate-900 transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) 
+                                ${layoutMode === 'report' || layoutMode === 'split' ? 'block-grow' : 'block-shrink'}`}>
+                                
+                                {/* HEADER BLOCK 3: Title Adjusted to text-lg and lighter color */}
+                                <div className="px-6 py-3 border-b dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-between items-center shadow-sm z-10">
+                                    <h3 className="font-semibold text-lg text-slate-500 dark:text-slate-400 flex items-center gap-3">
+                                        <span className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold shadow-sm">3</span> 
+                                        Final Report
+                                    </h3>
+                                    <div className="flex items-center gap-2">
+                                        
+                                         {/* DOWNLOAD TXT BUTTON (Export) */}
+                                        {isDownloadReady && (
+                                            <button 
+                                                onClick={handleDownloadReport} 
+                                                className="w-10 h-10 rounded-xl bg-emerald-500 text-white shadow-sm transition-all active:scale-95 hover:bg-emerald-600 flex items-center justify-center"
+                                                title="Download Report (TXT)"
+                                            >
+                                                <Icon name="Download" size={20} className="text-white"/>
+                                            </button>
+                                        )}
+
+                                        {/* MAXIMIZE / MINIMIZE BUTTON */}
+                                        <button onClick={() => setLayoutMode(layoutMode === 'report' ? 'split' : 'report')} className="w-10 h-10 text-gray-400 hover:text-blue-600 transition-colors p-2 rounded-lg" title={layoutMode === 'report' ? "Minimize" : "Maximize"}><Icon name={layoutMode === 'report' ? "CollapsePanel" : "ExpandPanel"}/></button>
+                                    </div>
+                                </div>
+
+                                <div className="flex-1 p-6 flex flex-col gap-4 bg-gray-50/50 dark:bg-slate-950 relative min-h-0">
+                                    
+                                    <div className="flex-1 min-h-0 relative">
+                                        <div className="report-container">
+                                            {isReportLoading ? (
+                                                <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-indigo-200 text-indigo-600 gap-3 fade-in h-full">
+                                                    <SparkleLoader size={32} className="text-indigo-600"/>
+                                                    <p className="text-adjustable-sm font-bold text-slate-600 dark:text-slate-300">Generating report...</p>
+                                                </div>
+                                            ) : finalReportText !== null ? (
+                                                <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-200 dark:border-emerald-900 shadow-sm h-full flex flex-col fade-in relative">
+                                                    
+                                                    {/* FONT CONTROL CHIP (FIX 2: Đã loại bỏ các nút tăng giảm cỡ chữ) */}
+                                                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 pointer-events-none z-10">
+                                                        {/* Các nút Plus và Minus đã bị loại bỏ khỏi đây */}
+                                                    </div>
+                                                    {/* END FONT CONTROL CHIP */}
+
+                                                    <textarea className="flex-1 w-full h-full p-4 bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-lg text-adjustable-sm font-mono leading-relaxed resize-none shadow-inner outline-none dark:text-slate-300 overflow-y-auto" value={finalReportText} onChange={(e) => setFinalReportText(e.target.value)}/>
+                                                </div>
+                                            ) : (
+                                                <div className="absolute inset-0 flex flex-col justify-center items-center opacity-70 w-full h-full">
+                                                    <Icon name="FileText" size={32} className="text-gray-400 dark:text-slate-600 mb-4"/>
+                                                    <p className="text-adjustable-sm text-gray-500 dark:text-slate-400">Generate Report to view the final summary.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
