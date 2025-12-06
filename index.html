@@ -35,6 +35,8 @@
                         'fade-in': 'fadeIn 0.5s ease-out forwards',
                         // NEW: Logo star orbit animation
                         'star-orbit': 'starOrbit 6s linear infinite',
+                        // NEW: Custom animation for Report Loading progress
+                        'pulse-progress': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     },
                     keyframes: {
                         'bounce-slight': { '0%': { transform: 'translateY(0)' }, '100%': { transform: 'translateY(-2px)' } },
@@ -785,6 +787,7 @@
                     "IMPROVEMENT: Removed redundant 'Switch to Report' button from Block 2.",
                     "FIXED BUG: Ensured 'BẰNG CHỨNG ĐÁNH GIÁ' and other narrative sections start on a new line in the Block 2 Review Textarea.",
                     "IMPROVEMENT: Completed translation of all permanent headers in the Block 3 Export Report to English for professional delivery (main narrative content remains Vietnamese as requested for Auditor Review/Edit).",
+                    "NEW FEATURE: Added function 'handleExportTextToEnglishTXT' to Block 3 export, automatically translating the final report to 100% English before saving with the new file naming convention."
                 ]
             },
             // Existing Release Notes
@@ -1004,11 +1007,19 @@
             );
         };
 
-        const SparkleLoader = ({ size = 20, className = "" }) => (
-            <div className={`relative flex items-center justify-center ${className}`}>
-                 <Icon name="Sparkle" size={size} className="animate-sparkle-spin text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]"/>
-            </div>
-        );
+        // Cập nhật SparkleLoader để hỗ trợ độ tương phản tốt hơn cho Light Mode
+        const SparkleLoader = ({ size = 20, className = "" }) => {
+            const colorClass = localStorage.getItem('iso_dark_mode') === 'true' 
+                ? "text-amber-400 drop-shadow-[0_0_8px_rgba(252,211,77,0.8)]" // Dark Mode: Vàng rực
+                : "text-violet-600 drop-shadow-[0_0_8px_rgba(139,92,246,0.8)]"; // Light Mode: Tím sáng
+            
+            return (
+                <div className={`relative flex items-center justify-center ${className}`}>
+                     {/* Sử dụng colorClass động cho Icon Sparkle */}
+                     <Icon name="Sparkle" size={size} className={`animate-sparkle-spin ${colorClass}`}/>
+                </div>
+            );
+        };
 
         const ClauseItem = ({ clause, isSelected, onToggle, onCopy }) => {
             
@@ -1147,6 +1158,10 @@
             const [isAnalysisSuccess, setIsAnalysisSuccess] = useState(null); 
             const [showToast, setShowToast] = useState(false);
             const [isReportLoading, setIsReportLoading] = useState(false); 
+            // NEW STATE: Loading state cho việc Export Report đã dịch
+            const [isExportLoading, setIsExportLoading] = useState(false); 
+            // NEW STATE: Loading state cho việc Export Notes đã dịch (Block 1)
+            const [isNotesExportLoading, setIsNotesExportLoading] = useState(false); 
             const [isAnalyzeLoading, setIsAnalyzeLoading] = useState(false); 
             const [analyzeErrorInBlock1, setAnalyzeErrorInBlock1] = useState(null); 
 
@@ -1351,9 +1366,9 @@ EVIDENCE: The documented procedure PR-01 for [Process Name] is available, rev 3.
                 // FIX LỖI 2: Tự động xuống dòng khi nhập vào các trường Tiếng Việt trong Block 2
                 if (field === 'conclusion_report') {
                      // Thay thế tất cả các instance của tiêu đề bằng \n + Tiêu đề
-                     value = value.replace(/THÔNG TIN ĐÁNH GIÁ:/g, '\nTHÔNG TIN ĐÁNH GIÁ:');
-                     value = value.replace(/BẰNG CHỨNG ĐÁNH GIÁ:/g, '\nBẰNG CHỨNG ĐÁNH GIÁ:');
-                     value = value.replace(/KẾT QUẢ PHÂN TÍCH:/g, '\nKẾT QUẢ PHÂN TÍCH:');
+                     value = value.replace(/AUDIT INFORMATION:/g, '\nAUDIT INFORMATION:');
+                     value = value.replace(/EVIDENCE:/g, '\nEVIDENCE:');
+                     value = value.replace(/ANALYSIS\/CONCLUSION:/g, '\nANALYSIS/CONCLUSION:');
                      // Đảm bảo không có dòng trống đầu tiên nếu chuỗi đã có \n ở đầu
                      value = value.trimStart(); 
                 }
@@ -1489,9 +1504,9 @@ EVIDENCE: The documented procedure PR-01 for [Process Name] is available, rev 3.
             const updateFindingDetail = (clauseId, field, value) => {
                 // FIX LỖI: Tự động xuống dòng khi nhập vào các trường Tiếng Việt
                 if (field === 'conclusion_report') {
-                     value = value.replace(/THÔNG TIN ĐÁNH GIÁ:/g, '\nTHÔNG TIN ĐÁNH GIÁ:');
-                     value = value.replace(/BẰNG CHỨNG ĐÁNH GIÁ:/g, '\nBẰNG CHỨNG ĐÁNH GIÁ:');
-                     value = value.replace(/KẾT QUẢ PHÂN TÍCH:/g, '\nKẾT QUẢ PHÂN TÍCH:');
+                     value = value.replace(/AUDIT INFORMATION:/g, '\nAUDIT INFORMATION:');
+                     value = value.replace(/EVIDENCE:/g, '\nEVIDENCE:');
+                     value = value.replace(/ANALYSIS\/CONCLUSION:/g, '\nANALYSIS\/CONCLUSION:');
                 }
                 
                 if (field === 'reason' || field === 'suggestion' || field === 'evidence' || field === 'conclusion_report') {
@@ -1982,55 +1997,133 @@ DETAILED FINDINGS:
                     setIsReportLoading(false);
                 }
             };
-
-            const handleDownloadReport = () => {
-                const companyName = cleanFileName(auditInfo.company) || 'Company';
-                const auditType = cleanFileName(auditInfo.type) || 'Audit';
-                const smo = cleanFileName(auditInfo.smo) || 'SMO';
-                const department = cleanFileName(auditInfo.department) || 'Dept'; 
-                const auditor = cleanFileName(auditInfo.auditor) || 'Auditor';     
-                const dateStr = new Date().toISOString().substring(0, 10).replace(/-/g, ''); 
-                const standardCode = (standard.split(':')[0] || 'ISO').replace('/', '_');
+            
+            // --- HÀM MỚI 1: EXPORT NOTES TO ENGLISH TXT (THAY THẾ handleDownloadNotes) ---
+            const handleExportNotesToEnglishTXT = async () => {
+                if (!evidence || evidence.trim() === '') {
+                    console.error("Cannot export: Audit notes (evidence) text is empty.");
+                    return;
+                }
                 
-                const element = document.createElement("a");
-                const file = new Blob([finalReportText], {type: 'text/plain'});
-                element.href = URL.createObjectURL(file);
-                element.download = `${standardCode}_${auditType}_${smo}_${companyName}_Audit_Report_${department}_${auditor}_${dateStr}.txt`; 
-                document.body.appendChild(element);
-                element.click(); 
+                setIsNotesExportLoading(true);
+                setAiError(null);
+
+                const sourceText = evidence;
+                
+                // 1. Chuẩn bị Prompt dịch
+                const prompt = `Translate the entire following RAW AUDIT NOTES content completely into professional English. Do not add any extra commentary or introductory phrases. Return only the translated text. Source Text: """${sourceText}"""`;
+                const systemInstruction = "You are a specialized technical translator for ISO Audit Notes. Translate all non-English text in the provided audit notes into professional English. Maintain the exact formatting, including headers (AUDIT INFO:, EVIDENCE:, etc.) and line breaks. You MUST ensure the entire content is translated.";
+
+                try {
+                    // 2. Gọi AI để dịch
+                    const payload = { 
+                        contents: [{ role: "user", parts: [{ text: prompt }] }], 
+                        systemInstruction: { parts: [{ text: systemInstruction }] } 
+                    };
+                    
+                    const translatedText = await callGemini(payload, false);
+
+                    // 3. Chuẩn bị Naming Convention và Download
+                    const standardName = standard.split(':')[0] || 'ISO';
+                    const companyName = cleanFileName(auditInfo.company) || 'COMPANY';
+                    const auditType = cleanFileName(auditInfo.type) || 'AUDIT_TYPE';
+                    const smo = cleanFileName(auditInfo.smo) || 'SMO';
+                    const auditor = cleanFileName(auditInfo.auditor) || 'AUDITOR';     
+                    const dateStr = new Date().toISOString().substring(0, 10).replace(/-/g, ''); 
+                    
+                    // Naming Convention: [Tên tiêu chuẩn]_[Audit type]_[SMO]_[Company Name]_Audit Note_[Auditor Name]_[Export date]
+                    const fileName = `${standardName}_${auditType}_${smo}_${companyName}_Audit_Note_${auditor}_${dateStr}.txt`;
+                    
+                    const element = document.createElement("a");
+                    // Tạo Blob từ nội dung đã dịch
+                    const file = new Blob([translatedText], {type: 'text/plain;charset=utf-8'});
+                    element.href = URL.createObjectURL(file);
+                    element.download = fileName; 
+                    document.body.appendChild(element);
+                    element.click(); 
+                    document.body.removeChild(element);
+                    
+                } catch (error) {
+                    setAiError(`Translation/Export Failed: ${error.message}`);
+                    console.error("Translation/Export Failed:", error);
+                } finally {
+                    setIsNotesExportLoading(false);
+                }
             };
             
-            // FIX 2: Handle Download Audit Notes (Evidence) - NEW: Use English Labels
-            const handleDownloadNotes = () => {
-                if (!evidence) return;
+            // --- HÀM CŨ: DOWNLOAD AUDIT NOTES (KHÔNG DÙNG NỮA) - BỊ THAY THẾ BỞI handleExportNotesToEnglishTXT ---
+            // const handleDownloadNotes = () => { ... };
+            
+            // --- HÀM MỚI 2: EXPORT REPORT TO ENGLISH TXT (TỪ BLOCK 3) ---
+            const handleExportTextToEnglishTXT = async () => {
+                 if (!finalReportText) {
+                    console.error("Cannot export: Final report text is empty.");
+                    return;
+                }
                 
-                const companyName = cleanFileName(auditInfo.company) || 'Company';
-                const auditType = cleanFileName(auditInfo.type) || 'Audit';
-                const dateStr = new Date().toISOString().substring(0, 10).replace(/-/g) ;
-                const fileName = `Audit_Notes_${companyName}_${auditType}_${dateStr}.txt`;
+                setIsExportLoading(true);
+                setAiError(null);
+
+                const sourceText = finalReportText;
                 
-                let fileContent = `--- AUDIT NOTES ---\n`;
-                fileContent += `Company: ${auditInfo.company || 'N/A'}\n`;
-                fileContent += `Audit Type: ${auditInfo.type || 'N/A'}\n`;
-                fileContent += `Department: ${auditInfo.department || 'N/A'}\n`;
-                fileContent += `Interviewee: ${auditInfo.interviewee || 'N/A'}\n`;
-                fileContent += `Auditor: ${auditInfo.auditor || 'N/A'}\n`;
-                fileContent += `Date Created: ${dateStr}\n\n`;
-                // Sử dụng nội dung evidence thô
-                fileContent += `RAW INPUT CONTENT (Structured):\n\n${evidence}`;
-                
-                const element = document.createElement("a");
-                // Tạo Blob từ nội dung, sử dụng UTF-8 (để hỗ trợ tiếng Việt nếu có trong evidence)
-                const file = new Blob([fileContent], {type: 'text/plain;charset=utf-8'});
-                element.href = URL.createObjectURL(file);
-                element.download = fileName; 
-                document.body.appendChild(element);
-                element.click(); 
+                // 1. Chuẩn bị Prompt dịch
+                const prompt = `Translate the following ISO Audit Report content completely into professional English. Do not add any extra commentary or introductory phrases. Return only the translated text. Source Text: """${sourceText}"""`;
+                const systemInstruction = "You are a specialized technical translator for ISO Audit documents. Translate all non-English text in the provided audit report into professional English. Maintain the exact formatting, including headers and line breaks. You MUST ensure the entire content is translated.";
+
+                try {
+                    // 2. Gọi AI để dịch
+                    const payload = { 
+                        contents: [{ role: "user", parts: [{ text: prompt }] }], 
+                        systemInstruction: { parts: [{ text: systemInstruction }] } 
+                    };
+                    
+                    const translatedText = await callGemini(payload, false);
+
+                    // 3. Chuẩn bị Naming Convention và Download
+                    const standardName = standard.split(':')[0] || 'ISO';
+                    const companyName = cleanFileName(auditInfo.company) || 'COMPANY';
+                    const auditType = cleanFileName(auditInfo.type) || 'AUDIT_TYPE';
+                    const smo = cleanFileName(auditInfo.smo) || 'SMO';
+                    const auditor = cleanFileName(auditInfo.auditor) || 'AUDITOR';     
+                    const dateStr = new Date().toISOString().substring(0, 10).replace(/-/g, ''); 
+                    
+                    // Naming Convention: [Tên tiêu chuẩn]_[Audit type]_[SMO]_[Company Name]_Audit Note_[Auditor Name]_[Export date]
+                    const fileName = `${standardName}_${auditType}_${smo}_${companyName}_Audit_Note_${auditor}_${dateStr}.txt`;
+                    
+                    const element = document.createElement("a");
+                    // Tạo Blob từ nội dung đã dịch
+                    const file = new Blob([translatedText], {type: 'text/plain;charset=utf-8'});
+                    element.href = URL.createObjectURL(file);
+                    element.download = fileName; 
+                    document.body.appendChild(element);
+                    element.click(); 
+                    document.body.removeChild(element);
+                    
+                } catch (error) {
+                    setAiError(`Translation/Export Failed: ${error.message}`);
+                    console.error("Translation/Export Failed:", error);
+                } finally {
+                    setIsExportLoading(false);
+                }
             };
             
             // --- RENDER HELPERS ---
             
             const renderAnalyzeToast = () => {
+                const isLoading = isExportLoading || isNotesExportLoading;
+                
+                if (isLoading) {
+                    // NEW: Toast Loading khi đang dịch/export
+                     const baseClasses = "fixed top-6 right-6 z-[10000] px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 text-sm font-medium animate-fade-in-up transition-opacity";
+                     const loadingClasses = "bg-indigo-50 dark:bg-indigo-900 border-l-4 border-indigo-500 text-indigo-800 dark:text-indigo-300";
+                     return (
+                         <div className={`${baseClasses} ${loadingClasses}`}>
+                             <Icon name="Loader" size={20} className="animate-spin text-indigo-500"/>
+                             Translating and Exporting...
+                         </div>
+                     );
+                }
+                
                 if (!showToast || isAnalysisSuccess === null) return null;
                 
                 const isSuccess = isAnalysisSuccess === true;
@@ -2096,7 +2189,7 @@ DETAILED FINDINGS:
                                     >
                                         {isGroupSelected ? <CheckLineart size={16} className="stroke-white"/> : <Icon name={g.icon} size={16} className={isGroupSelected ? '' : getGroupIconColor(g.icon)}/>}
                                         {isGroupPartiallySelected && !isGroupSelected && (
-                                            <span className="absolute top-0 right-0 w-2 h-2 bg-indigo-500 rounded-full border border-white dark:border-slate-900"></span>
+                                            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-indigo-500 rounded-full border border-white dark:border-slate-900"></span>
                                         )}
                                     </button>
                                     <h4 className="text-xs font-bold text-gray-700 dark:text-slate-200 uppercase tracking-wider">{g.title}</h4>
@@ -2455,14 +2548,15 @@ DETAILED FINDINGS:
                                         Audit Notes & Evidence
                                     </h3>
                                     <div className="flex items-center gap-2">
-                                         {/* NEW: Export TXT Button (Audit Notes) */}
+                                         {/* NEW: Export TXT Button (Audit Notes) - GỌI HÀM MỚI */}
                                          {evidence && (
                                             <button 
-                                                onClick={handleDownloadNotes} 
-                                                className="w-10 h-10 rounded-xl bg-indigo-500 text-white shadow-sm transition-all active:scale-95 hover:bg-indigo-600 flex items-center justify-center"
-                                                title="Export Notes (TXT)"
+                                                onClick={handleExportNotesToEnglishTXT} 
+                                                disabled={isNotesExportLoading}
+                                                className={`w-10 h-10 rounded-xl shadow-sm transition-all active:scale-95 flex items-center justify-center ${isNotesExportLoading ? 'bg-indigo-500' : 'bg-indigo-500 hover:bg-indigo-600'}`}
+                                                title="Export Notes (100% English TXT)"
                                             >
-                                                <Icon name="Download" size={20} className="text-white"/>
+                                                {isNotesExportLoading ? <Icon name="Loader" size={20} className="text-white animate-spin"/> : <Icon name="Download" size={20} className="text-white"/>}
                                             </button>
                                         )}
                                         {/* MAXIMIZE / MINIMIZE BUTTON */}
@@ -2831,14 +2925,16 @@ DETAILED FINDINGS:
                                     </h3>
                                     <div className="flex items-center gap-2">
                                         
-                                         {/* DOWNLOAD TXT BUTTON (Export) */}
+                                         {/* DOWNLOAD TXT BUTTON (Export - GỌI HÀM MỚI) */}
                                         {isDownloadReady && (
                                             <button 
-                                                onClick={() => handleDownloadReport()} 
-                                                className="w-10 h-10 rounded-xl bg-emerald-500 text-white shadow-sm transition-all active:scale-95 hover:bg-emerald-600 flex items-center justify-center"
-                                                title="Download Report (TXT)"
+                                                // Thay thế handleDownloadReport bằng hàm mới
+                                                onClick={handleExportTextToEnglishTXT} 
+                                                disabled={isExportLoading}
+                                                className={`w-10 h-10 rounded-xl shadow-sm transition-all active:scale-95 flex items-center justify-center ${isExportLoading ? 'bg-indigo-500' : 'bg-emerald-500 hover:bg-emerald-600'}`}
+                                                title="Export Report (100% English TXT)"
                                             >
-                                                <Icon name="Download" size={20} className="text-white"/>
+                                                {isExportLoading ? <Icon name="Loader" size={20} className="text-white animate-spin"/> : <Icon name="Download" size={20} className="text-white"/>}
                                             </button>
                                         )}
 
@@ -2852,9 +2948,19 @@ DETAILED FINDINGS:
                                     <div className="flex-1 min-h-0 relative">
                                         <div className="report-container">
                                             {isReportLoading ? (
-                                                <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-indigo-200 text-indigo-600 gap-3 fade-in h-full">
+                                                // Cập nhật Hiệu ứng Loading
+                                                <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-indigo-200 dark:border-indigo-900 text-indigo-600 gap-6 fade-in h-full relative overflow-hidden">
+                                                    
+                                                    {/* NEW: Visualizing Progress Bar effect */}
+                                                    <div className="absolute inset-x-0 bottom-0 h-2 bg-indigo-200 dark:bg-indigo-900/50">
+                                                        <div className="h-full w-full bg-indigo-500 dark:bg-indigo-400 opacity-50 animate-pulse-progress"></div>
+                                                    </div>
+
                                                     <SparkleLoader size={32} className="text-indigo-600"/>
-                                                    <p className="text-adjustable-sm font-bold text-slate-600 dark:text-slate-300">Generating report...</p>
+                                                    <p className="text-adjustable-sm font-bold text-slate-600 dark:text-slate-300">Generating and Structuring Report Content...</p>
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                        (This process involves complex AI text generation and formatting.)
+                                                    </div>
                                                 </div>
                                             ) : finalReportText !== null ? (
                                                 <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-200 dark:border-emerald-900 shadow-sm h-full flex flex-col fade-in relative">
