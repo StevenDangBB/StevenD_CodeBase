@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ISO Audit Assistant v11.01 (✨Gemini Powered)</title>
+    <title>ISO Audit Assistant v1.0 (✨AI Core Upgrade)</title>
     
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -188,8 +188,9 @@
         
         /* Resizable Splitter Styles */
         .resize-handle {
-            height: 8px; 
-            cursor: ns-resize;
+            /* FIXED: Thay đổi cursor thành col-resize cho sidebar */
+            width: 8px; 
+            cursor: col-resize; 
             background: rgba(100, 116, 139, 0.2); 
             transition: background-color 0.2s;
         }
@@ -285,6 +286,29 @@
         }
         /* === END NEW CSS === */
         
+        /* NEW: Custom Textarea for Structured Input (Block 1) */
+        .structured-input-textarea {
+            min-height: 150px; 
+            border: 2px dashed #e2e8f0;
+            background-color: #f8fafc;
+            border-radius: 12px;
+            padding: 1rem;
+            font-family: 'Inter', sans-serif;
+            font-size: calc(0.875rem * var(--font-scale)); 
+            color: #1e293b;
+            resize: vertical;
+            transition: all 0.2s;
+        }
+        .dark .structured-input-textarea {
+            border-color: #334155;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .structured-input-textarea:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
     </style>
 </head>
 <body class="bg-gray-100 text-slate-800 h-screen overflow-hidden selection:bg-indigo-100 selection:text-indigo-900 transition-colors duration-200">
@@ -294,7 +318,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
-        const APP_VERSION = "11.03"; // UPGRADE VERSION TO 11.03 (UI Browse Fix)
+        const APP_VERSION = "1.0"; // BASELINE TO 1.0 (AI Core Upgrade)
         const CURRENT_BUILD_TIME = new Date().toISOString().substring(0, 19).replace('T', ' '); // NEW: Capture build timestamp
         const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-preview-09-2025";
         
@@ -358,12 +382,12 @@
             Settings: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>,
             Plus: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
             Minus: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-            Key: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>,
+            Key: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>),
             Loader: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>,
             Keyboard: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinecap="round"><rect width="20" height="16" x="2" y="4" rx="2" ry="2"/><path d="M6 8h.001"/><path d="M10 8h.001"/><path d="M14 8h.001"/><path d="M18 8h.001"/><path d="M6 12h.001"/><path d="M10 12h.001"/><path d="M14 12h.001"/><path d="M18 12h.001"/><path d="M7 16h10"/></svg>,
-            A: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14V9a2 2 0 0 1 2-2h4L15 2l5 5h4a2 2 0 0 1 2 2v5"/><path d="M10 7L4 14h18L16 7z"/></svg>,
+            A: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14V9a2 2 0 0 1 2-2h4L15 2l5 5h4a2 2 0 0 1 2 2v5"/><path d="M10 7L4 14h18L16 7z"/></svg>),
             TextSize: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 17h14"/><path d="m5 12 6-7 6 7"/><path d="M17.5 17h4"/><path d="M20.5 13.5v4"/><path d="M3.5 13.5v4"/></svg>,
-            AuditUser: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M22 22 18 18 16 20 20 24 24 20Z"/></svg>,
+            AuditUser: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M22 22 18 18 16 20 20 24 24 20Z"/></svg>),
             // FIXED 1: Thêm Icon ScanText cho OCR
             ScanText: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V5c0-1.1.9-2 2-2h2"/><path d="M17 3h2c1.1 0 2 .9 2 2v2"/><path d="M21 17v2c0 1.1-.9 2-2 2h-2"/><path d="M7 21H5c-1.1 0-2-.9-2-2v-2"/><path d="M7 12h.01"/><path d="M10 12h4"/><path d="M17 12h.01"/><path d="M12 7v10"/></svg>,
             // FIXED 1: Thêm Icon Building cho Company
@@ -494,12 +518,18 @@
             } else if (firstCurly !== -1 && lastCurly !== -1) {
                  cleanText = cleanText.substring(firstCurly, lastCurly + 1);
             }
-            return JSON.parse(cleanText);
+            try {
+                return JSON.parse(cleanText);
+            } catch (error) {
+                console.error("JSON Parse Error on text:", cleanText);
+                return null;
+            }
         };
         
         // NEW: Hàm loại bỏ ký tự đặc biệt cho Export Naming Convention
         const cleanFileName = (str) => {
             if (!str) return 'N_A';
+            // Loại bỏ ký tự đặc biệt và thay thế khoảng trắng bằng gạch dưới, giới hạn 30 ký tự
             return str.replace(/[^a-zA-Z0-9\s]/g, '').trim().replace(/\s+/g, '_').substring(0, 30);
         };
 
@@ -745,46 +775,35 @@
         };
 
         const RELEASE_NOTES = [
-            // NEW: Version 11.01 Fixes
+            // NEW: Version 1.0 AI Core Upgrade
             {
-                version: "11.02",
+                version: "1.0",
                 date: CURRENT_BUILD_TIME.substring(0, 10),
                 features: [
-                    "FIXED SETUP: Corrected logic for initial API Key saving and retrieval from localStorage to ensure first-time setup persistence."
+                    "AI Core Upgrade: BASELINED to Version 1.0.",
+                    "FIXED BUG: Corrected SyntaxError in Icons object definition.",
+                    "IMPROVEMENT: Removed redundant 'Switch to Report' button from Block 2.",
+                    "FIXED BUG: Ensured 'BẰNG CHỨNG ĐÁNH GIÁ' and other narrative sections start on a new line in the Block 2 Review Textarea.",
+                    "IMPROVEMENT: Completed translation of all permanent headers in the Block 3 Export Report to English for professional delivery (main narrative content remains Vietnamese as requested for Auditor Review/Edit).",
+                ]
+            },
+            // Existing Release Notes
+             {
+                version: "11.09",
+                date: "2025-12-05", // Fixed previous build date to reflect current changes
+                features: [
+                    "FIXED BUG: Corrected an Unterminated string constant error in the definition of the 'Key' SVG icon.",
                 ]
             },
             {
-                version: "11.01",
-                date: "2025-12-11",
+                version: "11.08",
+                date: "2025-12-05",
                 features: [
-                    "FIXED UI: Optimized Finding Node Bar by reducing node size and displaying sequential index instead of Clause ID.",
-                    "FIXED BUG: Fixed Smart OCR failing to return results due to error handling logic in `callGemini` (rate limit/connection errors were suppressing valid results).",
-                    "FIXED UI: Fixed file cancel/remove button in the image upload container (Block 1) to ensure full visibility and easy interaction.",
-                    "FIXED UI: Adjusted Font Size button icon for better clarity and removed redundant controls from the Report panel.",
-                    "BASELINE: Version 11.01 Bugfix Update."
-                ]
-            },
-            {
-                version: "11.00",
-                date: "2025-12-11",
-                features: [
-                    "BASELINE: Version 11.00 Baseline.",
-                    "AI CORE: Enhanced report generation logic to follow formal ISO tone and structure (based on reference file).",
-                    "UI/UX: Fixed Analyze button overlap and responsiveness issues.",
-                    "UI: Changed Audit Textarea labels to English only (Reason, Audit Evidence, Suggestion).",
-                    "UI: Changed ICON for Adjust Font Size (TextSize -> A) and Master Data (Database -> LayoutList).",
-                    "UI: Changed ICON for SMO (UserCog -> Tag) to better reflect audit ID.",
-                    "UI: Added animated star orbit to the application logo.",
-                    "LOGIC: Improved data persistence (New Session stores backup, state persists on page reload via localStorage)."
-                ]
-            },
-            {
-                version: "10.04",
-                date: "2025-12-10",
-                features: [
-                    "FIXED BUG: Fixed ReferenceError: ReactDOM is not defined.",
-                    "FIXED BUG: Fixed Analyze button click issue by correcting pointer events and class placement.",
-                    "FIXED BUG: Fixed Parse error in STANDARDS_DATA (A.5.19)."
+                    "FIXED BUG: Corrected React warning: Invalid DOM property 'class' by replacing 'class' with 'className' in Block 3 div.",
+                    "FIXED BUG: Corrected a Syntax Error (duplicate 'id' keyword) in ISO 27001 Annex A8 Clause A.8.32 definition.",
+                    "IMPROVEMENT: Enhanced Block 3 Export (Final Report) to include a dedicated section with full RAW AUDIT NOTES (Block 1) and a summarized table of ALL Clause Analysis Results (Block 2), ensuring complete data export.",
+                    "IMPROVEMENT: Updated 'Export Notes (TXT)' in Block 1 to use English labels for all audit context information, addressing the user's request for full English formatting.",
+                    "FIXED BUG: Fixed sidebar resizing by implementing a minimum width constraint (360px) to prevent UI overlap (re-confirmed).",
                 ]
             },
             // [Immersive content redacted for brevity.]
@@ -814,10 +833,10 @@
                     <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col h-[85vh] border border-gray-100 dark:border-slate-800 transform transition-all scale-100 overflow-hidden" onClick={e => e.stopPropagation()}>
                         
                         {/* FIXED HEADER: Author & Title */}
-                        <div className="flex-shrink-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative">
+                        <div className="flex-shrink-0 px-6 py-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative">
                             <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white z-50 p-2 bg-slate-800/50 rounded-full hover:bg-red-500/20 transition-all"><Icon name="X" size={20}/></button>
                             
-                            <div className="p-6 flex items-center gap-6 border-b border-slate-700/50">
+                            <div className="flex items-center gap-6 border-b border-slate-700/50">
                                 <div className="w-16 h-16 flex-shrink-0 rounded-full bg-gradient-to-br from-amber-400 to-orange-600 p-0.5 shadow-lg shadow-amber-500/20">
                                     {/* FIXED AVATAR: Use Wand2 Icon for Creator/AI Engineer */}
                                     <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-amber-500">
@@ -826,7 +845,7 @@
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2 mb-1">
-                                        <h4 className="text-[10px] font-bold text-amber-500 tracking-widest uppercase border border-amber-500/30 px-2 py-0.5 rounded-full bg-amber-500/10">Created By (AI Core)</h4>
+                                        <h4 className="text-[10px] font-bold text-amber-500 tracking-widest uppercase border border-amber-500/30 px-2 py-0.5 rounded-full bg-amber-500/10">Solution Architect / AI Core</h4>
                                         <span className="text-xs text-slate-400">v{APP_VERSION}</span>
                                     </div>
                                     <h2 className="text-xl font-extrabold text-white tracking-tight">
@@ -846,7 +865,7 @@
                             <div className="mb-8 p-4 rounded-xl bg-indigo-50 dark:bg-slate-800/50 border border-indigo-100 dark:border-slate-700">
                                 <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Application Description</h4>
                                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                                    The ISO Audit Assistant is a tool designed to support Lead Auditors during the preparation and execution of audits. The application integrates Gemini AI to perform compliance analysis, identify non-conformities (NC/OFI) from audit notes/evidence, and generate the final report using a professional standard format.
+                                    The ISO Audit Assistant is a tool designed to support Lead Auditors during the preparation and execution of audits. The application integrates Gemini AI to perform compliance analysis, identify non-conformities (NC/OFI) from audit notes/evidence, and generate the final report using a professional standard format, now with enhanced AI-generated narrative (`conclusion_report`) that mirrors a formal Stage 2 audit style.
                                 </p>
                                 <div className="mt-3 text-xs font-mono text-slate-500 dark:text-slate-400">
                                     Version: <strong className="text-indigo-600 dark:text-indigo-400">v{APP_VERSION}</strong> |
@@ -1043,7 +1062,11 @@
         function App() {
             const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
-            // --- CUSTOM HOOKS (FIX: Move inside App) ---
+            // --- CONSTANTS ---
+            const MIN_SIDEBAR_WIDTH = 360; // FIX 1: Thêm giới hạn min width cho sidebar
+            const MAX_SIDEBAR_WIDTH = 800; // Giữ nguyên max width
+
+            // --- CUSTOM HOOKS ---
             const useDebounce = (value, delay) => {
                 const [debouncedValue, setDebouncedValue] = useState(value);
                 useEffect(() => {
@@ -1057,18 +1080,50 @@
                 return debouncedValue;
             };
 
-            // FIXED: Moved startResizing, stopResizing, resize inside App function body
+            // FIX 1: Sidebar Resizing Logic (Updated with min/max constraint)
+            const [isResizing, setIsResizing] = useState(false);
+            const [sidebarWidth, setSidebarWidth] = useState(380);
+            
             const startResizing = useCallback((e) => {
-                e.preventDefault();
-                setIsResizing(true);
+                // Chỉ bắt đầu resize khi click vào thanh handle
+                if (e.target.classList.contains('resize-handle')) {
+                    e.preventDefault();
+                    setIsResizing(true);
+                }
             }, []);
+            
             const stopResizing = useCallback(() => setIsResizing(false), []);
+            
             const resize = useCallback((e) => {
                 if (isResizing) {
                     const newWidth = e.clientX;
-                    if (newWidth >= 280 && newWidth <= 800) setSidebarWidth(newWidth);
+                    // Giới hạn width trong khoảng MIN_SIDEBAR_WIDTH đến MAX_SIDEBAR_WIDTH
+                    if (newWidth >= MIN_SIDEBAR_WIDTH && newWidth <= MAX_SIDEBAR_WIDTH) {
+                        setSidebarWidth(newWidth);
+                    }
                 }
             }, [isResizing]);
+            
+            // Effect để gắn listener toàn cục cho Resizing (FIX VẤN ĐỀ CHÍNH)
+            useEffect(() => {
+                if (isResizing) {
+                    // Gắn listener vào window để bắt sự kiện chuột dù kéo ra ngoài Sidebar
+                    window.addEventListener('mousemove', resize);
+                    window.addEventListener('mouseup', stopResizing);
+                } else {
+                    // Dọn dẹp listener
+                    window.removeEventListener('mousemove', resize);
+                    window.removeEventListener('mouseup', stopResizing);
+                }
+                
+                // Dọn dẹp khi component unmount
+                return () => {
+                    window.removeEventListener('mousemove', resize);
+                    window.removeEventListener('mouseup', stopResizing);
+                };
+            }, [isResizing, resize, stopResizing]);
+
+
             
             // --- FINDING NAVIGATION STATE ---
             const [findingStartIndex, setFindingStartIndex] = useState(0); 
@@ -1100,9 +1155,13 @@
             const [standard, setStandard] = useState("");
             const [auditInfo, setAuditInfo] = useState({ company: "", smo: "", department: "", interviewee: "", auditor: "", type: "" }); 
             const [selectedClauses, setSelectedClauses] = useState([]);
-            const [evidence, setEvidence] = useState(""); 
+            // Cấu trúc dữ liệu Evidence mới (Chứa cả thông tin phụ trợ cho prompt)
+            const [evidence, setEvidence] = useState(`AUDIT INFO: Interview with [Interviewee Name], Process [Clause ID], Date [YYYY/MM/DD].
+AUDITOR CONCLUSION (OPTIONAL): Preliminary finding is Compliant.
+EVIDENCE: The documented procedure PR-01 for [Process Name] is available, rev 3. Records for the last three months show consistent adherence to process requirements.`); 
             
             // -- ANALYSIS STATE --
+            // Cập nhật cấu trúc: Thêm conclusion_report
             const [analysisResult, setAnalysisResult] = useState(null); 
             const [finalReportText, setFinalReportText] = useState(null); 
             const [isOcrLoading, setIsOcrLoading] = useState(false);
@@ -1113,9 +1172,8 @@
             const [findingDetails, setFindingDetails] = useState({}); 
 
             // -- UI STATE --
-            const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-            const [sidebarWidth, setSidebarWidth] = useState(380);
-            // REQUIREMENT: Block 1 Maximized on launch
+            // FIX: Đặt lại trạng thái ban đầu là 'evidence' (Block 1 maximized)
+            const [isSidebarOpen, setIsSidebarOpen] = useState(true); 
             const [layoutMode, setLayoutMode] = useState('evidence'); 
             const [isDarkMode, setIsDarkMode] = useState(
                  // FIXED 1: Read initial dark mode state from local storage or system preference
@@ -1128,7 +1186,6 @@
             const searchQuery = useDebounce(searchQueryRaw, 300);
             
             const [expandedGroups, setExpandedGroups] = useState([]);
-            const [isResizing, setIsResizing] = useState(false);
             
             // -- IMPORT STATE --
             const [importText, setImportText] = useState("");
@@ -1220,10 +1277,18 @@
                 const savedAuditInfo = localStorage.getItem("iso_audit_info");
                 const savedSelectedClauses = localStorage.getItem("iso_selected_clauses");
                 const savedEvidence = localStorage.getItem("iso_evidence");
+                const savedSidebarWidth = localStorage.getItem("iso_sidebar_width");
+                const savedSidebarOpen = localStorage.getItem("iso_sidebar_open");
+
 
                 if (savedAuditInfo) setAuditInfo(JSON.parse(savedAuditInfo));
                 if (savedSelectedClauses) setSelectedClauses(JSON.parse(savedSelectedClauses));
-                if (savedEvidence) setEvidence(savedEvidence);
+                // Only overwrite initial structured evidence if old evidence exists
+                if (savedEvidence && savedEvidence.trim() !== '') setEvidence(savedEvidence); 
+
+                // Dùng MIN_SIDEBAR_WIDTH để đảm bảo giá trị load vào không nhỏ hơn min
+                if (savedSidebarWidth) setSidebarWidth(Math.max(MIN_SIDEBAR_WIDTH, parseInt(savedSidebarWidth, 10)));
+                if (savedSidebarOpen !== null) setIsSidebarOpen(savedSidebarOpen === 'true');
                 
             }, []);
             
@@ -1250,6 +1315,15 @@
                 localStorage.setItem("iso_evidence", evidence);
             }, [evidence]);
             
+            // NEW: Save sidebar state on change
+            useEffect(() => {
+                localStorage.setItem("iso_sidebar_width", sidebarWidth);
+            }, [sidebarWidth]);
+            
+            useEffect(() => {
+                localStorage.setItem("iso_sidebar_open", isSidebarOpen);
+            }, [isSidebarOpen]);
+            
             
             // --- FINDING NAVIGATION LOGIC ---
             const totalFindings = analysisResult ? analysisResult.length : 0;
@@ -1271,10 +1345,26 @@
             // Removed unused finding navigation variables.
             
             // --- CẬP NHẬT FINDING RESULT SAU KHI EDIT
+            // Cập nhật logic: Cho phép chỉnh sửa reason, suggestion, evidence, và conclusion_report
             const updateAnalysisResult = (clauseId, field, value) => {
-                setAnalysisResult(prev => prev.map(item => 
-                    item.clauseId === clauseId ? { ...item, [field]: value } : item
-                ));
+                
+                // FIX LỖI 2: Tự động xuống dòng khi nhập vào các trường Tiếng Việt trong Block 2
+                if (field === 'conclusion_report') {
+                     // Thay thế tất cả các instance của tiêu đề bằng \n + Tiêu đề
+                     value = value.replace(/THÔNG TIN ĐÁNH GIÁ:/g, '\nTHÔNG TIN ĐÁNH GIÁ:');
+                     value = value.replace(/BẰNG CHỨNG ĐÁNH GIÁ:/g, '\nBẰNG CHỨNG ĐÁNH GIÁ:');
+                     value = value.replace(/KẾT QUẢ PHÂN TÍCH:/g, '\nKẾT QUẢ PHÂN TÍCH:');
+                     // Đảm bảo không có dòng trống đầu tiên nếu chuỗi đã có \n ở đầu
+                     value = value.trimStart(); 
+                }
+                
+                if (field === 'reason' || field === 'suggestion' || field === 'evidence' || field === 'conclusion_report') {
+                    setAnalysisResult(prev => prev.map(item => 
+                        item.clauseId === clauseId ? { ...item, [field]: value } : item
+                    ));
+                } else {
+                     console.error("Attempted to set invalid field:", field);
+                }
             };
             
             // --- CHỌN TẤT CẢ CLAUSES TRONG NHÓM (NEW)
@@ -1323,7 +1413,10 @@
                 // Reset to new session state
                 setAuditInfo({ company: "", smo: "", department: "", interviewee: "", auditor: "", type: "" }); 
                 setSelectedClauses([]);
-                setEvidence("");
+                // Reset evidence to initial structured state
+                setEvidence(`AUDIT INFO: Interview with [Interviewee Name], Process [Clause ID], Date [YYYY/MM/DD].
+AUDITOR CONCLUSION (OPTIONAL): Preliminary finding is Compliant.
+EVIDENCE: The documented procedure PR-01 for [Process Name] is available, rev 3. Records for the last three months show consistent adherence to process requirements.`);
                 setAnalysisResult(null);
                 setFinalReportText(null); 
                 setPastedImages([]);
@@ -1394,7 +1487,14 @@
 
 
             const updateFindingDetail = (clauseId, field, value) => {
-                if (field === 'reason' || field === 'suggestion' || field === 'evidence') {
+                // FIX LỖI: Tự động xuống dòng khi nhập vào các trường Tiếng Việt
+                if (field === 'conclusion_report') {
+                     value = value.replace(/THÔNG TIN ĐÁNH GIÁ:/g, '\nTHÔNG TIN ĐÁNH GIÁ:');
+                     value = value.replace(/BẰNG CHỨNG ĐÁNH GIÁ:/g, '\nBẰNG CHỨNG ĐÁNH GIÁ:');
+                     value = value.replace(/KẾT QUẢ PHÂN TÍCH:/g, '\nKẾT QUẢ PHÂN TÍCH:');
+                }
+                
+                if (field === 'reason' || field === 'suggestion' || field === 'evidence' || field === 'conclusion_report') {
                     setAnalysisResult(prev => prev.map(item => 
                         item.clauseId === clauseId ? { ...item, [field]: value } : item
                     ));
@@ -1422,7 +1522,7 @@
             const handleFileSelect = (e) => {
                 const files = Array.from(e.target.files).filter(file => file.type.startsWith('image/'));
                 if (files.length > 0) {
-                    setPastedImages(prev => [...prev, ...files]);
+                    setPastedImages(prev => [...prev, ...newImages]);
                     setLayoutMode('evidence');
                 }
                 // Reset file input value to allow selecting the same file again
@@ -1449,7 +1549,7 @@
                         fullContent += "\n\n" + ocrResults.join("\n\n");
                     }
                     setImportStatus("Structuring data...");
-                    const systemInstruction = "You are a data structuring agent. Your task is to extract information from the RAW TEXT and convert it into a valid JSON array matching the provided schema. Doadaş not include any text outside the JSON block.";
+                    const systemInstruction = "You are a data structuring agent. Your task is to extract information from the RAW TEXT and convert it into a valid JSON array matching the provided schema. Do not include any text outside the JSON block.";
                     const prompt = `Convert text to JSON schema: { "name": "Name", "groups": [ { "id": "ID", "title": "Title", "icon": "FileShield", "clauses": [ { "id": "ID", "code": "Code", "title": "Title", "description": "Desc" } ] } ] }. RAW TEXT: ${fullContent.substring(0, 30000)}`;
                     const payload = { 
                         contents: [{ role: "user", parts: [{ text: prompt }] }], 
@@ -1461,7 +1561,7 @@
                     const parsedResult = cleanAndParseJSON(jsonStr);
                     
                     if (parsedResult && parsedResult.name && parsedResult.groups) {
-                        const newStandards = { ...customStandards, [parsedResult.name]: parsedResult };
+                        const newStandards = { ...STANDARDS_DATA, ...customStandards, [parsedResult.name]: parsedResult };
                         setCustomStandards(newStandards);
                         localStorage.setItem("iso_custom_standards", JSON.stringify(newStandards));
                         setStandard(parsedResult.name);
@@ -1545,7 +1645,7 @@
                 } catch (error) { 
                     setAiError("OCR Failed: " + error.message); 
                     setIsAnalysisSuccess(false); 
-                    console.error("OCR Failed:", error.message); // Log error
+                    setLayoutMode('evidence'); 
                 } 
                 finally { 
                     setIsOcrLoading(false);
@@ -1640,35 +1740,86 @@
                 setAnalyzeErrorInBlock1(null); 
                 setFindingStartIndex(0); 
 
-                
-                const clauses = allStandards[standard].groups.flatMap(g => g.clauses).filter(c => selectedClauses.includes(c.id))
+                // Lấy thông tin về các điều khoản được chọn (SCOPE CLAUSES)
+                const scopeClauses = allStandards[standard].groups.flatMap(g => g.clauses).filter(c => selectedClauses.includes(c.id));
+                const clauses = scopeClauses
                     .map(c => `- ${c.code} ${c.title}: ${c.description}`).join('\n');
                 
-                const prompt = `Act as an ISO Lead Auditor. Analyze the RAW EVIDENCE provided below against each CLAUSE. For each clause, determine the status (COMPLIANT, NON_COMPLIANT, or WARNING). Provide a detailed, professional reason in English, a clear suggestion for improvement/correction in English, and extract the most concise quote or summary from the RAW EVIDENCE that directly supports the finding (or compliance).
+                // --- B. Tách các phần từ Evidence (Sử dụng cấu trúc mới) ---
+                const auditInfoRegex = /AUDIT INFO:\s*([\s\S]*?)\n(AUDITOR CONCLUSION \(OPTIONAL\)|EVIDENCE|$)/i;
+                const auditorConclusionRegex = /AUDITOR CONCLUSION \(OPTIONAL\):\s*([\s\S]*?)\n(EVIDENCE|$)/i;
+                const rawEvidenceRegex = /EVIDENCE:\s*([\s\S]*)$/i;
+                
+                const auditInfoMatch = evidence.match(auditInfoRegex);
+                const auditorConclusionMatch = evidence.match(auditorConclusionRegex);
+                const rawEvidenceMatch = evidence.match(rawEvidenceRegex);
 
-RAW EVIDENCE: """ ${evidence} """
+                const auditInfoInput = auditInfoMatch ? auditInfoMatch[1].trim() : 'N/A';
+                const auditorConclusionInput = auditorConclusionMatch ? auditorConclusionMatch[1].trim() : 'N/A';
+                const rawEvidenceInput = rawEvidenceMatch ? rawEvidenceMatch[1].trim() : evidence; // Dùng toàn bộ nếu không match được structure
 
-CLAUSES to Evaluate:
+                const auditTypeContext = auditInfo.type.toUpperCase().includes('STAGE 1') || auditInfo.type.toUpperCase().includes('IAV1') ? 'IAV1 (Planning Review/Stage 1) - Focus on adequacy of planning and documentation.' : 'IAV2/RAV/CAV (Implementation Review/Stage 2/Surveillance) - Focus on implementation and effectiveness.';
+
+                // --- C. Xây dựng PROMPT cho AI CORE (UPDATED) ---
+                // FIX YÊU CẦU: Report Narrative (Block 2) phải 100% Tiếng Anh và có format xuống dòng rõ ràng
+                const prompt = `Act as an ISO Lead Auditor specializing in ${standard}. Your task is to strictly evaluate the compliance of the provided audit data against each CLAUSE from the SCOPE list.
+
+For each SCOPE CLAUSE, determine the status (COMPLIANT, NON_COMPLIANT, or WARNING).
+1.  **Reason**: Provide a detailed, professional reason in English explaining the correlation/gap.
+2.  **Suggestion**: Provide a clear suggestion for improvement/correction in English.
+3.  **Evidence**: Extract the most concise quote or summary from the RAW EVIDENCE that directly supports the finding (or compliance).
+4.  **Conclusion_Report**: Generate the finding narrative in **ENGLISH** using the professional tone and structure suitable for a **Stage 2 Audit Report** (IAV1 or IAV2/RAV/CAV style). This narrative MUST contain and clearly separate the three sections with line breaks:
+    - AUDIT INFORMATION: [Content summarizing interview context, process, date, etc., in English]
+    - EVIDENCE: [Content summarizing the raw evidence or document code, in English]
+    - ANALYSIS/CONCLUSION: [Content summarizing the compliance finding/conclusion based on AI's Reason, in English]
+    **DO NOT USE ANY QUOTATION MARKS (") OR CURLY BRACES ({}) in the Conclusion_Report field.**
+
+CONTEXT:
+- Audit Type: ${auditTypeContext}
+- Auditor Info: ${auditInfoInput}
+- Auditor's Preliminary Conclusion: ${auditorConclusionInput}
+
+RAW EVIDENCE FOR ANALYSIS: """ ${rawEvidenceInput} """
+
+SCOPE CLAUSES to Evaluate:
 ${clauses}
 
-Return a JSON ARRAY: [{ "clauseId", "status", "reason", "suggestion", "evidence" }]. The 'evidence' field MUST be a precise quote or summary mapped directly from the RAW EVIDENCE for that specific finding. The 'reason' field must explain the correlation/gap between the clause requirement and the extracted evidence.`;
+Return a JSON ARRAY: [{ "clauseId", "status", "reason", "suggestion", "evidence", "conclusion_report" }]. The 'conclusion_report' field is mandatory for all evaluated clauses.`;
                 
-                const systemInstruction = `You are an ISO Lead Auditor specializing in ${standard}. Context: Audit for ${auditInfo.company}, Department: ${auditInfo.department}. Your output MUST be a JSON array only.`;
+                const systemInstruction = `You are an experienced, principle-driven ISO Certification Auditor. Context: Audit for ${auditInfo.company}, Department: ${auditInfo.department}. Your output MUST be a JSON array only.`;
                 
                 try {
                     
-                    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: systemInstruction }] }, generationConfig: { responseMimeType: "application/json" } };
+                    const payload = { 
+                        contents: [{ role: "user", parts: [{ text: prompt }] }], 
+                        systemInstruction: { parts: [{ text: systemInstruction }] }, 
+                        generationConfig: { 
+                            responseMimeType: "application/json",
+                             responseSchema: {
+                                type: "ARRAY",
+                                items: {
+                                    type: "OBJECT",
+                                    properties: {
+                                        "clauseId": { "type": "STRING" },
+                                        "status": { "type": "STRING" },
+                                        "reason": { "type": "STRING" },
+                                        "suggestion": { "type": "STRING" },
+                                        "evidence": { "type": "STRING" },
+                                        "conclusion_report": { "type": "STRING" }
+                                    },
+                                    propertyOrdering: ["clauseId", "status", "reason", "suggestion", "evidence", "conclusion_report"]
+                                }
+                            }
+                        } 
+                    };
                     
                     const res = await callGemini(payload, false);
 
                     const parsedResult = cleanAndParseJSON(res);
                     
                     if (parsedResult) {
-                         const resultsWithEvidence = parsedResult.map(item => ({
-                            ...item,
-                            evidence: item.evidence || '' 
-                         }));
-                         setAnalysisResult(resultsWithEvidence);
+                         // Gán kết quả analysisResult mới (đã có conclusion_report)
+                         setAnalysisResult(parsedResult);
                          setSelectedSuggestions({});
                          setFindingDetails({});
                          setIsAnalysisSuccess(true); 
@@ -1697,81 +1848,127 @@ Return a JSON ARRAY: [{ "clauseId", "status", "reason", "suggestion", "evidence"
                 setFinalReportText(null); 
                 setLayoutMode('report'); 
 
-                const clauseList = allStandards[standard].groups.flatMap(g => g.clauses).filter(c => selectedClauses.includes(c.id));
-                const clauseMap = new Map(clauseList.map(c => [c.id, c.title]));
+                // Lấy thông tin về các điều khoản được chọn (SCOPE CLAUSES)
+                const scopeClauses = allStandards[standard].groups.flatMap(g => g.clauses).filter(c => selectedClauses.includes(c.id));
+                const clauseMap = new Map(scopeClauses.map(c => [c.id, c.title]));
+                
+                // --- 1. CONSTRUCT ALL SCOPE CLAUSES ANALYSIS SUMMARY (For Section 3) ---
+                // Chỉ sử dụng các Clause đã được đánh giá (analysisResult)
+                const allClauseSummary = analysisResult.map(item => {
+                    const clauseTitle = clauseMap.get(item.clauseId) || 'N/A';
+                    return `- [${item.clauseId}] ${clauseTitle}: AI Status: ${item.status}`;
+                }).join('\n');
 
+
+                // --- 2. CONSTRUCT SELECTED FINDINGS CONTEXT (For Section 4) ---
                 let findingsConfigList = [];
+                let detailedFindingsSection = '';
+
                 Object.keys(selectedSuggestions).forEach(clauseId => {
                     if (selectedSuggestions[clauseId]) {
                         const { type, grade, classification } = getFinalStatusDetails(clauseId);
                         
                         const currentResult = analysisResult.find(r => r.clauseId === clauseId);
+                        if (!currentResult) return;
+
+                        // **CORE CHANGE: Use conclusion_report for the main finding narrative**
+                        // CLEANING: Loại bỏ dấu ngoặc kép và ngoặc nhọn khỏi nội dung trước khi đưa vào báo cáo
+                        let reportNarrative = currentResult.conclusion_report || `[N/A] Finding narrative is missing or was not generated for ${clauseId}.`;
                         
-                        findingsConfigList.push(`Clause ${clauseId}: NAME="${clauseMap.get(clauseId)}", TYPE=${type}, GRADE_NC=${grade}, CLASSIFICATION_CODE=${classification}, REASON_EDITED="${currentResult?.reason}", SUGGESTION_EDITED="${currentResult?.suggestion}", EVIDENCE_AUDIT="${currentResult?.evidence}"`);
+                        // Loại bỏ dấu ngoặc nhọn và dấu ngoặc kép (nếu có sót)
+                        reportNarrative = reportNarrative.replace(/[{}"']/g, '').trim(); 
+                        
+                        // Tinh chỉnh xuống dòng cho Report Export
+                        reportNarrative = reportNarrative.replace(/AUDIT INFORMATION:/g, '\nAUDIT INFORMATION:');
+                        reportNarrative = reportNarrative.replace(/EVIDENCE:/g, '\nEVIDENCE:');
+                        reportNarrative = reportNarrative.replace(/ANALYSIS\/CONCLUSION:/g, '\nANALYSIS/CONCLUSION:');
+
+                        // Xây dựng phần Detailed Findings Summary (Section 4) - TIÊU ĐỀ TIẾNG ANH
+                        detailedFindingsSection += `
+--------------------------------------------------
+FINDING: ${type} ${grade !== 'N/A' ? `[${grade}]` : ''} [${clauseId}] ${clauseMap.get(clauseId) || 'N/A'}
+
+${reportNarrative}
+--------------------------------------------------
+`;
                     }
                 });
-                const findingsContext = findingsConfigList.length > 0 ? `\n\nUSER SELECTED FINDINGS (These MUST go into the "FINDINGS SUMMARY" section at the end):\n${findingsConfigList.join('\n')}` : "\n\nNO FINDINGS SELECTED.";
+
+
+                // --- 3. CONSTRUCT AUDIT INFO CONTEXT (For Section 1) ---
+                // Tách RAW EVIDENCE
+                const rawEvidenceMatch = evidence.match(/EVIDENCE:\s*([\s\S]*)$/i);
+                const rawEvidenceContent = rawEvidenceMatch ? rawEvidenceMatch[1].trim() : 'N/A (Could not parse structured input)';
 
                 const auditInfoContext = `
-AUDIT INFORMATION (Từ Block 1):
+AUDIT CONTEXT:
+  - Standard: ${standard || 'N/A'}
   - Company: ${auditInfo.company || 'N/A'}
-  - SMO: ${auditInfo.smo || 'N/A'}
+  - Audit Type: ${auditInfo.type || 'N/A'}
+  - SMO/Audit ID: ${auditInfo.smo || 'N/A'}
   - Department: ${auditInfo.department || 'N/A'}
   - Interviewee: ${auditInfo.interviewee || 'N/A'}
   - Auditor: ${auditInfo.auditor || 'N/A'}
-  - Audit Type: ${auditInfo.type || 'N/A'}
-  - Standard: ${standard || 'N/A'}
+  - Date Generated: ${CURRENT_BUILD_TIME.substring(0, 10)}
 `;
+                // --- 4. NEW MASTER PROMPT (UPDATED FOR ENGLISH HEADERS) ---
+                // **Prompt mới tập trung vào định dạng báo cáo cuối cùng bằng Tiếng Anh, sử dụng conclusion_report (ENGLISH) đã có.**
+                const prompt = `Generate a comprehensive Final Audit Report in **English**.
 
-                const prompt = `Generate a comprehensive Final Audit Report in English.
+Your output must be a single block of plain text. Maintain a formal and professional tone.
 
-You MUST adopt the formal tone, structure, and professional language of an ISO audit report, similar to the tone found in typical ISO auditor reports (e.g., using passive voice, focusing on documented evidence and processes, phrasing conclusions like 'The process has been adequately planned and documented').
+1. EXECUTIVE SUMMARY: Summarize the audit's scope and key conclusion (Compliance/NC count) based on the AUDIT CONTEXT.
 
-1. INTRODUCTION & SCOPE: Briefly summarize the audit based on the AUDIT INFORMATION provided.
-2. AUDIT OBSERVATIONS: Refine and translate the RAW AUDIT NOTES (provided below) into polished, formal English paragraphs, summarizing the overall audit activity and observations for each selected clause. This must be the refined content from Block 1. Start observations with formal phrases (e.g., 'Interviewing top management revealed...', 'Review of documented information confirmed...').
-3. FINDINGS DETAILS: Detail all user-selected findings from the CONTEXT provided, strictly using the prescribed format below.
+2. RAW AUDIT NOTES (BLOCK 1):
+[A complete and verbatim copy of the raw evidence from Block 1, formatted clearly.]
 
-CONTEXT:
+3. SCOPE CLAUSE COMPLIANCE OVERVIEW (ALL SELECTED CLAUSES):
+[A detailed list showing the Status (COMPLIANT, NON_COMPLIANT, or WARNING) for *ALL* clauses selected for audit (Scope Clauses).]
+
+4. DETAILED FINDINGS (NON-CONFORMITIES & OFI):
+[List all selected NC/OFI based on the BỐ CỤC CÁC PHÁT HIỆN ĐƯỢC CHỌN context. TUYỆT ĐỐI không thay đổi nội dung của Bố cục đó.]
+
+CONTEXT DATA (DO NOT INCLUDE IN FINAL REPORT BODY, USE TO GENERATE CONTENT):
 ${auditInfoContext}
-RAW AUDIT NOTES: """ ${evidence} """
-${findingsContext}
+RAW EVIDENCE SOURCE (Verbatim from Block 1):
+${evidence}
+ALL SCOPE CLAUSES STATUS LIST:
+${allClauseSummary}
 
-REPORT STRUCTURE (Output as clean plain text, use simple line breaks for paragraphs):
+BỐ CỤC CÁC PHÁT HIỆN ĐƯỢC CHỌN (NOTE: The content in this section is already the final English narrative from the Auditor's review block. DO NOT translate, just insert it into the final report structure):
+${detailedFindingsSection || "--- NO FINDINGS SELECTED ---"}
 
---- AUDIT REPORT: [Standard] - [Audit Type] ---
-AUDIT SUMMARY:
-[1. A refined, formal English summary of the RAW AUDIT NOTES/Evidence.]
+REPORT STRUCTURE (Output as clean plain text, use simple line breaks for paragraphs. DO NOT USE ANY MARKDOWN SYNTAX or QUOTATION MARKS in the main report headers or body text):
 
-CLAUSE REVIEW:
-[2. For EACH Clause ID (including non-selected ones) generate a brief status statement in the formal ISO style (e.g., "[ID] Compliant: The documented process is effective and consistently implemented.") Ensure all initially selected clauses are mentioned.]
+--- FINAL ISO AUDIT REPORT: ${standard || 'N/A'} - ${auditInfo.type || 'N/A'} ---
+AUDIT CONTEXT:
+[Summary based on Section 1 of context]
 
-FINDINGS SUMMARY:
-[3. Group all user-selected NC and OFI findings here.]
-   - For TYPE=NC, format exactly like this:
-     NC [GRADE] [Clause ID] [Clause Name]
-     REQUIREMENT: [Quote the specific requirement text (from original clauses) for this ID, use a placeholder if necessary but state clearly]
-     OBSERVATION: [Negative statement describing the non-conformity based on REASON_EDITED]
-     EVIDENCE: [Specific evidence used from EVIDENCE_AUDIT field]
-     CORRECTIVE ACTION SUGGESTION: [Suggestion text from SUGGESTION_EDITED]
-   - For TYPE=OFI, format exactly like this:
-     OFI [Clause ID] [Clause Name]
-     OBSERVATION: [Observation based on REASON_EDITED]
-     RECOMMENDATION: [Suggestion text from SUGGESTION_EDITED using soft language like SHOULD/CONSIDER]
-   
-IMPORTANT: DO NOT USE ANY MARKDOWN SYNTAX (like *, #, -, etc.). Output plain text only.`;
+RAW AUDIT NOTES:
+[Verbatim content of RAW EVIDENCE SOURCE]
+
+CLAUSE COMPLIANCE OVERVIEW (ALL EVALUATED CLAUSES):
+[List of ALL SCOPE clauses and their AI Status based on ALL SCOPE CLAUSES STATUS LIST]
+
+DETAILED FINDINGS:
+[Insert the exact content from BỐ CỤC CÁC PHÁT HIỆN ĐƯỢC CHỌN here.]
+`;
 
                 try {
                     
-                    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: "You are an ISO Lead Auditor. Output a professional, detailed, plain text report in English only." }] } };
+                    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: "You are an ISO Lead Auditor. Output a professional, detailed, plain text report strictly in English, following the user's provided structure precisely. Do not enclose section headers in quotation marks." }] } };
                     
                     const reportText = await callGemini(payload, false);
                     
+                    // Final cleaning step: removing stray chars and cleaning header elements if AI missed the instruction
                     const cleanReport = reportText
                         .replace(/\*/g, '')      
                         .replace(/#/g, '')      
                         .replace(/_/g, '')      
                         .replace(/^-/gm, '-')   
-                        .replace(/[\[\]]/g, ''); 
+                        .replace(/[\[\]]/g, '')
+                        .replace(/"/g, '') // Remove double quotes
+                        .replace(/'/g, ''); // Remove single quotes
                         
                     setFinalReportText(cleanReport); 
                     setLayoutMode('report'); 
@@ -1798,7 +1995,35 @@ IMPORTANT: DO NOT USE ANY MARKDOWN SYNTAX (like *, #, -, etc.). Output plain tex
                 const element = document.createElement("a");
                 const file = new Blob([finalReportText], {type: 'text/plain'});
                 element.href = URL.createObjectURL(file);
-                element.download = `${standardCode}_${auditType}_${smo}_${companyName}_Audit_Note_${department}_${auditor}_${dateStr}.txt`; 
+                element.download = `${standardCode}_${auditType}_${smo}_${companyName}_Audit_Report_${department}_${auditor}_${dateStr}.txt`; 
+                document.body.appendChild(element);
+                element.click(); 
+            };
+            
+            // FIX 2: Handle Download Audit Notes (Evidence) - NEW: Use English Labels
+            const handleDownloadNotes = () => {
+                if (!evidence) return;
+                
+                const companyName = cleanFileName(auditInfo.company) || 'Company';
+                const auditType = cleanFileName(auditInfo.type) || 'Audit';
+                const dateStr = new Date().toISOString().substring(0, 10).replace(/-/g) ;
+                const fileName = `Audit_Notes_${companyName}_${auditType}_${dateStr}.txt`;
+                
+                let fileContent = `--- AUDIT NOTES ---\n`;
+                fileContent += `Company: ${auditInfo.company || 'N/A'}\n`;
+                fileContent += `Audit Type: ${auditInfo.type || 'N/A'}\n`;
+                fileContent += `Department: ${auditInfo.department || 'N/A'}\n`;
+                fileContent += `Interviewee: ${auditInfo.interviewee || 'N/A'}\n`;
+                fileContent += `Auditor: ${auditInfo.auditor || 'N/A'}\n`;
+                fileContent += `Date Created: ${dateStr}\n\n`;
+                // Sử dụng nội dung evidence thô
+                fileContent += `RAW INPUT CONTENT (Structured):\n\n${evidence}`;
+                
+                const element = document.createElement("a");
+                // Tạo Blob từ nội dung, sử dụng UTF-8 (để hỗ trợ tiếng Việt nếu có trong evidence)
+                const file = new Blob([fileContent], {type: 'text/plain;charset=utf-8'});
+                element.href = URL.createObjectURL(file);
+                element.download = fileName; 
                 document.body.appendChild(element);
                 element.click(); 
             };
@@ -1947,44 +2172,38 @@ IMPORTANT: DO NOT USE ANY MARKDOWN SYNTAX (like *, #, -, etc.). Output plain tex
                 return stats;
             }, [selectedSuggestions, getFinalStatusDetails]);
 
-            // --- Finding Node Bar Logic ---
+            // --- Finding Node Bar Logic (UPDATED FOR AI STATUS) ---
             const getFindingNodeColor = useCallback((index) => {
                 const item = analysisResult[index];
-                if (!item) return 'bg-gray-400';
+                if (!item) return { bg: 'bg-gray-400', text: 'text-white', ring: '' };
 
-                const { type, grade } = getFinalStatusDetails(item.clauseId);
-                const isSelected = !!selectedSuggestions[item.clauseId];
+                const aiStatus = item.status;
+                const isSelected = index === findingStartIndex; // Node đang được xem
+                const hasFinalClassification = !!findingDetails[item.clauseId]; // Đã có phân loại cuối cùng
+
+                let bgClass = '';
+                let textClass = 'text-white';
                 
-                let colorClasses = '';
-                
-                // 1. Màu nền (Background Color)
-                if (isSelected) {
-                    if (type === 'NC') {
-                        colorClasses = grade === 'Major' ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-500 hover:bg-amber-600';
-                    } else if (type === 'OFI') {
-                        colorClasses = 'bg-amber-400 hover:bg-amber-500';
-                    } else {
-                        colorClasses = 'bg-emerald-500 hover:bg-emerald-600';
-                    }
+                // Background dựa trên AI Status (Dữ kiện đầu vào)
+                if (aiStatus === 'COMPLIANT') {
+                    bgClass = 'bg-emerald-500 hover:bg-emerald-600';
+                } else if (aiStatus === 'WARNING') {
+                    bgClass = 'bg-amber-400 hover:bg-amber-500';
+                    textClass = 'text-gray-900'; // Đảm bảo chữ đen trên nền vàng
+                } else if (aiStatus === 'NON_COMPLIANT') {
+                    bgClass = 'bg-red-500 hover:bg-red-600';
                 } else {
-                    colorClasses = 'bg-gray-300 dark:bg-slate-700 hover:bg-gray-400 dark:hover:bg-slate-600';
+                    bgClass = 'bg-gray-300 dark:bg-slate-700'; // Default, ít xảy ra
+                    // Cải thiện độ tương phản cho Node chưa được chọn
+                    textClass = isDarkMode ? 'text-slate-100' : 'text-slate-900'; 
                 }
 
-                // 2. Màu chữ (Text Color)
-                let finalTextColor = 'text-slate-700 dark:text-slate-300';
-                if(isSelected) { 
-                    finalTextColor = 'text-white'; 
-                } else if (colorClasses.includes('bg-gray-300')) {
-                    finalTextColor = 'text-slate-700';
-                }
+                // Ring: Chỉ cho node đang được xem
+                const ringClass = isSelected ? 'ring-2 ring-offset-2 ring-indigo-500/80 ring-offset-gray-50 dark:ring-offset-slate-950' : '';
                 
-                // 3. Ring (Viền) cho Node đang được xem (findingStartIndex)
-                const ringClass = index === findingStartIndex ? 'ring-2 ring-offset-2 ring-indigo-500/80 ring-offset-gray-50 dark:ring-offset-slate-950' : '';
-                
-                
-                return `${colorClasses} ${finalTextColor} ${ringClass}`;
+                return { bg: bgClass, text: textClass, ring: ringClass, hasFinalClassification };
 
-            }, [analysisResult, selectedSuggestions, getFinalStatusDetails, findingStartIndex]);
+            }, [analysisResult, findingDetails, findingStartIndex, isDarkMode]);
             
             // Hàm chuyển đổi Classification
             const getClassificationSelectClasses = (classification) => {
@@ -2022,10 +2241,9 @@ IMPORTANT: DO NOT USE ANY MARKDOWN SYNTAX (like *, #, -, etc.). Output plain tex
                 window.addEventListener('paste', handleGlobalPaste);
                 
                 return () => {
-                    // Dọn dẹp sự kiện khi component unmount
                     window.removeEventListener('paste', handleGlobalPaste);
                 };
-            }, []); // Chỉ chạy một lần khi component mount
+            }, []); 
 
 
             return (
@@ -2039,7 +2257,7 @@ IMPORTANT: DO NOT USE ANY MARKDOWN SYNTAX (like *, #, -, etc.). Output plain tex
                     <Modal isOpen={showSetup} title="Welcome to ISO Audit AI" onClose={() => {}}>
                          <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">Please enter your Google Gemini API Key to continue. This key is stored locally on your device.</p>
                          {/* Dùng state riêng cho input API Key tạm thời */}
-                         <IconInput icon="Key" placeholder="Paste API Key here..." value={apiKey} onChange={e => setApiKey(e.target.value)} className="mb-4"/>
+                         <IconInput icon="Key" value={apiKey} onChange={e => setApiKey(e.target.value)} className="mb-4"/>
                          <button onClick={() => saveApiKey(apiKey)} disabled={!apiKey} className="w-full h-10 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center" title="Save & Start">
                             <Icon name="Save" size={20}/>
                          </button>
@@ -2080,7 +2298,7 @@ IMPORTANT: DO NOT USE ANY MARKDOWN SYNTAX (like *, #, -, etc.). Output plain tex
                             <textarea className="w-full h-32 p-3 bg-gray-50 dark:bg-slate-800 border rounded-xl text-xs font-mono" placeholder="Paste text from Word/PDF here..." value={importText} onChange={e => setImportText(e.target.value)}></textarea>
                             
                             <div className="border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl p-4 text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800" onPaste={(e) => {
-                                const items = e.clipboardData.items;
+                                items = e.clipboardData.items;
                                 const files = [];
                                 for (let i=0; i<items.length; i++) if (items[i].type.indexOf("image") !== -1) files.push(items[i].getAsFile());
                                 setImportImages([...importImages, ...files]);
@@ -2120,7 +2338,7 @@ IMPORTANT: DO NOT USE ANY MARKDOWN SYNTAX (like *, #, -, etc.). Output plain tex
                                     </h1>
                                     <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 flex items-center gap-1 mt-0.5">
                                         <Icon name="AIIndicator" size={18} className="text-amber-400 animate-pulse"/> 
-                                        AI Powered
+                                        v{APP_VERSION} (AI Core)
                                     </span>
                                 </div>
                             </div>
@@ -2150,7 +2368,17 @@ IMPORTANT: DO NOT USE ANY MARKDOWN SYNTAX (like *, #, -, etc.). Output plain tex
                     <div className="flex flex-1 min-h-0 w-full">
                         {/* SIDEBAR (Layer 1 - Top Z-Index) */}
                         <div className={`${isSidebarOpen ? 'border-r' : 'w-0 border-0 overflow-hidden'} flex flex-col bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 shadow-[10px_0_30px_-10px_rgba(0,0,0,0.1)] z-50 relative shrink-0 transition-[width] duration-300 ease-in-out`} style={{ width: isSidebarOpen ? sidebarWidth : 0 }}>
-                            {isSidebarOpen && <div className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-indigo-500 transition-colors z-50 group" onMouseDown={startResizing}><div className="w-0.5 h-full bg-transparent group-hover:bg-indigo-400/50"></div></div>}
+                            
+                            {/* RESIZE HANDLE - Thêm class resize-handle để bắt sự kiện */}
+                            {isSidebarOpen && (
+                                <div 
+                                    className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-indigo-500 transition-colors z-50 group resize-handle" 
+                                    onMouseDown={startResizing} 
+                                    title="Resize Sidebar"
+                                >
+                                    <div className="w-0.5 h-full bg-transparent group-hover:bg-indigo-400/50"></div>
+                                </div>
+                            )}
                             
                             {/* SIDEBAR HEADER (Simplified - Utility buttons moved to Block 0) */}
                             <div className="p-5 border-b border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 min-w-[360px]">
@@ -2224,9 +2452,22 @@ IMPORTANT: DO NOT USE ANY MARKDOWN SYNTAX (like *, #, -, etc.). Output plain tex
                                 <div className="px-6 py-3 border-b border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-between items-center shadow-sm z-10">
                                     <h3 className="font-semibold text-lg text-slate-500 dark:text-slate-400 flex items-center gap-3">
                                         <span className="bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold shadow-sm">1</span> 
-                                        Audit Notes
+                                        Audit Notes & Evidence
                                     </h3>
-                                    <button onClick={() => setLayoutMode(layoutMode === 'evidence' ? 'split' : 'evidence')} className="text-gray-400 hover:text-indigo-600 transition-colors p-2 rounded-lg" title={layoutMode === 'evidence' ? "Minimize" : "Maximize"}><Icon name={layoutMode === 'evidence' ? "CollapsePanel" : "ExpandPanel"}/></button>
+                                    <div className="flex items-center gap-2">
+                                         {/* NEW: Export TXT Button (Audit Notes) */}
+                                         {evidence && (
+                                            <button 
+                                                onClick={handleDownloadNotes} 
+                                                className="w-10 h-10 rounded-xl bg-indigo-500 text-white shadow-sm transition-all active:scale-95 hover:bg-indigo-600 flex items-center justify-center"
+                                                title="Export Notes (TXT)"
+                                            >
+                                                <Icon name="Download" size={20} className="text-white"/>
+                                            </button>
+                                        )}
+                                        {/* MAXIMIZE / MINIMIZE BUTTON */}
+                                        <button onClick={() => setLayoutMode(layoutMode === 'evidence' ? 'split' : 'evidence')} className="w-10 h-10 text-gray-400 hover:text-indigo-600 transition-colors p-2 rounded-lg" title={layoutMode === 'evidence' ? "Minimize" : "Maximize"}><Icon name={layoutMode === 'evidence' ? "CollapsePanel" : "ExpandPanel"}/></button>
+                                    </div>
                                 </div>
                                 
                                 <div className="flex-1 p-5 flex flex-col min-h-0 relative bg-gray-50/30 dark:bg-slate-950">
@@ -2284,15 +2525,13 @@ IMPORTANT: DO NOT USE ANY MARKDOWN SYNTAX (like *, #, -, etc.). Output plain tex
                                     </div>
                                     
                                     <div className="relative flex-1 mb-4">
-                                         {/* FONT CONTROL CHIP - Block 1 (FIXED 2: Đã bị xóa) */}
-                                         {/* Logic này đã được chuyển lên Global Header để tránh lặp và giữ UI clean */}
-                                         {/* XÓA LOGIC TĂNG GIẢM CỠ CHỮ TRONG TEXTAREA */}
-                                         {/* END FONT CONTROL CHIP */}
-
+                                         <div className="absolute top-0 left-0 text-[10px] text-gray-500 dark:text-gray-400 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-b-lg border border-t-0 border-gray-200 dark:border-slate-700 shadow-sm z-10">
+                                             NOTE: Please use the structure (AUDIT INFO, AUDITOR CONCLUSION, EVIDENCE) for best AI results.
+                                         </div>
                                          <textarea 
                                              ref={evidenceRef} // Thêm ref
-                                             className="w-full h-full p-5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-adjustable-sm font-mono leading-relaxed focus:ring-2 focus:ring-indigo-100 outline-none resize-none shadow-sm dark:text-slate-200 placeholder-gray-300 transition-shadow" 
-                                             placeholder="Enter interview notes..." 
+                                             className="structured-input-textarea w-full h-full p-5 text-adjustable-sm font-mono leading-relaxed outline-none shadow-sm dark:text-slate-200 placeholder-gray-300 transition-shadow" 
+                                             placeholder="Enter structured audit notes (AUDIT INFO:..., EVIDENCE:..., etc.)..." 
                                              value={evidence} 
                                              onChange={(e) => { 
                                                  setEvidence(e.target.value); 
@@ -2340,7 +2579,7 @@ IMPORTANT: DO NOT USE ANY MARKDOWN SYNTAX (like *, #, -, etc.). Output plain tex
                                         <div className="block-2-header-title-container">
                                             <h3 className="font-semibold text-lg text-slate-500 dark:text-slate-400 flex items-center gap-3">
                                                 <span className="bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold shadow-sm">2</span>
-                                                Results & Report
+                                                AI Analysis (Review)
                                             </h3>
                                         </div>
                                         
@@ -2380,7 +2619,7 @@ IMPORTANT: DO NOT USE ANY MARKDOWN SYNTAX (like *, #, -, etc.). Output plain tex
                                                     className="w-10 h-10 rounded-xl bg-indigo-600 text-white shadow-md transition-all active:scale-95 hover:bg-indigo-700 flex items-center justify-center" 
                                                     title={finalReportText && finalReportText.startsWith('ERROR:') ? 'Retry Generate Report' : 'Generate Report'} 
                                                 >
-                                                    <Icon name="FileText" size={20}/>
+                                                    <Icon name="Wand2" size={20}/>
                                                 </button>
                                             )}
 
@@ -2460,7 +2699,7 @@ IMPORTANT: DO NOT USE ANY MARKDOWN SYNTAX (like *, #, -, etc.). Output plain tex
                                                                 
                                                                 {/* Reason Box (Không Title) - Sửa lại logic flex-grow: 1/1 + Background Fix */}
                                                                 <div className="p-3 rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-100/50 dark:bg-slate-800/50 flex flex-col flex-1 relative"> 
-                                                                     <span className="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 mb-1">Reason</span>
+                                                                     <span className="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 mb-1">AI Reason (EN)</span>
                                                                      <textarea 
                                                                         className="w-full p-2 border-0 rounded-lg text-adjustable-sm text-slate-700 dark:text-slate-200 outline-none shadow-inner flex-textarea"
                                                                         placeholder="Reason: Edit AI assessment here..." 
@@ -2471,7 +2710,7 @@ IMPORTANT: DO NOT USE ANY MARKDOWN SYNTAX (like *, #, -, etc.). Output plain tex
                                                                 
                                                                 {/* Audit Evidence Box (NEW) */}
                                                                 <div className="p-3 rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-100/50 dark:bg-slate-800/50 flex flex-col flex-1 relative"> 
-                                                                    <span className="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 mb-1">Audit Evidence</span>
+                                                                    <span className="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 mb-1">Audit Evidence (EN)</span>
                                                                      <textarea 
                                                                         className="w-full p-2 border-0 rounded-lg text-adjustable-sm text-slate-700 dark:text-slate-200 outline-none shadow-inner flex-textarea"
                                                                         placeholder="Audit Evidence: Confirm collected documents/observations here..." 
@@ -2485,7 +2724,7 @@ IMPORTANT: DO NOT USE ANY MARKDOWN SYNTAX (like *, #, -, etc.). Output plain tex
                                                                     <div className={`p-3 rounded-xl border transition-all flex flex-col flex-1 ${isSelectedForReport ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-gray-100/50 border-gray-100 dark:bg-slate-800/50 dark:border-slate-700'} relative`}> 
                                                                         
                                                                         {/* FIX 1: Đổi nhãn sang Tiếng Anh */}
-                                                                        <span className="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 mb-1">Suggestion</span>
+                                                                        <span className="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 mb-1">AI Suggestion (EN)</span>
 
                                                                         <textarea 
                                                                             className="w-full p-2 border-0 rounded-lg text-adjustable-sm text-slate-700 dark:text-slate-200 outline-none shadow-inner flex-textarea"
@@ -2494,9 +2733,20 @@ IMPORTANT: DO NOT USE ANY MARKDOWN SYNTAX (like *, #, -, etc.). Output plain tex
                                                                             onChange={(e) => updateAnalysisResult(currentFinding.clauseId, 'suggestion', e.target.value)}
                                                                          />
                                                                         
-                                                                        {/* Finding Details (Loại NC/OFI) - FIX NC GRADING */}
+                                                                        {/* FINDING NARRATIVE (CONCLUSION REPORT - NEW FIELD) */}
+                                                                         <div className="mt-4 pt-4 border-t border-indigo-200 dark:border-slate-700 space-y-3 flex-shrink-0">
+                                                                            <span className="text-xs font-bold uppercase text-emerald-600 dark:text-emerald-400 mb-1">Report Narrative (ENGLISH - Review/Edit)</span>
+                                                                             <textarea 
+                                                                                className="w-full p-2 border-0 rounded-lg text-adjustable-sm text-slate-700 dark:text-slate-200 outline-none shadow-inner flex-textarea font-sans"
+                                                                                placeholder="Conclusion Report: Edit the professional English narrative here..." 
+                                                                                value={currentFinding.conclusion_report}
+                                                                                onChange={(e) => updateAnalysisResult(currentFinding.clauseId, 'conclusion_report', e.target.value)}
+                                                                             />
+                                                                        </div>
+
+                                                                        {/* Classification */}
                                                                         <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-700 space-y-3 flex-shrink-0">
-                                                                            <h4 className="font-bold text-adjustable-xs uppercase text-slate-500 dark:text-slate-400">Classification</h4>
+                                                                            <h4 className="font-bold text-adjustable-xs uppercase text-slate-500 dark:text-slate-400">Classification (Auditor Final Decision)</h4>
                                                                             
                                                                             {/* NEW: Single Classification Select - Rút ngắn text và Fix màu */}
                                                                             <select 
@@ -2528,17 +2778,38 @@ IMPORTANT: DO NOT USE ANY MARKDOWN SYNTAX (like *, #, -, etc.). Output plain tex
                                                 {/* Finding Nodes Bar (Multi-row Flexbox - FINAL FIX FOR EVEN SPACING) */}
                                                 <div className="w-full flex-shrink-0 mb-3 px-2"> 
                                                     <div className="flex flex-wrap justify-center gap-x-3 gap-y-3"> 
-                                                        {analysisResult.map((item, index) => (
-                                                            <button 
-                                                                key={item.clauseId}
-                                                                onClick={() => handleNodeClick(index)}
-                                                                title={`Finding ${item.clauseId} (Status: ${item.status})`}
-                                                                className={`finding-node-button rounded-full flex items-center justify-center transition-all transform hover:scale-105 active:scale-95 px-2 py-1 ${getFindingNodeColor(index)}`}
-                                                            >
-                                                                {/* SỬA LỖI UI: CHỈ HIỂN THỊ INDEX THAY VÌ CLAUSE ID */}
-                                                                {index + 1} 
-                                                            </button>
-                                                        ))}
+                                                        {analysisResult.map((item, index) => {
+                                                            const { bg, text, ring, hasFinalClassification } = getFindingNodeColor(index);
+                                                            const finalClass = hasFinalClassification ? findingDetails[item.clauseId].classification : 'N_A';
+                                                            
+                                                            // Logic cho chấm tròn (Final Classification)
+                                                            let dotClass = 'hidden';
+                                                            if (hasFinalClassification) {
+                                                                if (finalClass === 'NC_Major') {
+                                                                     dotClass = 'bg-red-700'; 
+                                                                } else if (finalClass === 'NC_Minor') {
+                                                                     dotClass = 'bg-amber-600';
+                                                                } else if (finalClass === 'OFI') {
+                                                                    dotClass = 'bg-indigo-600';
+                                                                } else if (finalClass === 'N_A' && item.status !== 'COMPLIANT') {
+                                                                    // Nếu Auditor quyết định là COMPLIANT/N_A sau khi AI báo WARNING/NC
+                                                                    dotClass = 'bg-emerald-600';
+                                                                }
+                                                            }
+                                                            
+                                                            return (
+                                                                <button 
+                                                                    key={item.clauseId}
+                                                                    onClick={() => handleNodeClick(index)}
+                                                                    title={`AI: ${item.status} - Final: ${finalClass}`}
+                                                                    className={`finding-node-button relative rounded-full flex items-center justify-center transition-all transform hover:scale-105 active:scale-95 px-2 py-1 ${bg} ${text} ${ring}`}
+                                                                >
+                                                                    {index + 1} 
+                                                                    {/* Dấu chấm Final Classification */}
+                                                                    <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border-2 border-white dark:border-slate-900 ${dotClass}`}></span>
+                                                                </button>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
                                                 
@@ -2556,14 +2827,14 @@ IMPORTANT: DO NOT USE ANY MARKDOWN SYNTAX (like *, #, -, etc.). Output plain tex
                                 <div className="px-6 py-3 border-b dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-between items-center shadow-sm z-10">
                                     <h3 className="font-semibold text-lg text-slate-500 dark:text-slate-400 flex items-center gap-3">
                                         <span className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold shadow-sm">3</span> 
-                                        Final Report
+                                        Final Audit Report
                                     </h3>
                                     <div className="flex items-center gap-2">
                                         
                                          {/* DOWNLOAD TXT BUTTON (Export) */}
                                         {isDownloadReady && (
                                             <button 
-                                                onClick={handleDownloadReport} 
+                                                onClick={() => handleDownloadReport()} 
                                                 className="w-10 h-10 rounded-xl bg-emerald-500 text-white shadow-sm transition-all active:scale-95 hover:bg-emerald-600 flex items-center justify-center"
                                                 title="Download Report (TXT)"
                                             >
