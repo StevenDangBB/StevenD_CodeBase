@@ -1633,11 +1633,13 @@ EVIDENCE: The documented procedure PR-01 for [Process Name] is available, rev 3.
                     const ocrPromises = pastedImages.map(async (file) => {
                         const b64 = await fileToBase64(file);
                         
+                        // START MODIFICATION: Update prompt for prose interpretation and full English translation
                         const parts = [
-                             { text: "Extract all text from this image which is a document page for an ISO audit. Return only the raw, extracted text in English." }, 
+                             { text: "Analyze the image content, which is a document or audit evidence. Describe the key information and purpose of the document in a clear, professional English prose format, avoiding bullet points, tables, or lists. Focus on summarizing the content's meaning, not just raw text extraction. The output must be 100% in English." }, 
                              { inlineData: { mimeType: file.type, data: b64 } }
                         ];
-
+                        // END MODIFICATION
+                        
                         const payload = { contents: [{ role: "user", parts: parts }] };
                         
                         // Gọi Gemini API để thực hiện OCR
@@ -1909,7 +1911,7 @@ Return a JSON ARRAY: [{ "clauseId", "status", "reason", "suggestion", "evidence"
                         // Tinh chỉnh xuống dòng cho Report Export
                         reportNarrative = reportNarrative.replace(/AUDIT INFORMATION:/g, '\nAUDIT INFORMATION:');
                         reportNarrative = reportNarrative.replace(/EVIDENCE:/g, '\nEVIDENCE:');
-                        reportNarrative = reportNarrative.replace(/ANALYSIS\/CONCLUSION:/g, '\nANALYSIS/CONCLUSION:');
+                        reportNarrative = reportNarrative.replace(/ANALYSIS\/CONCLUSION:/g, '\nANALYSIS\/CONCLUSION:');
 
                         // Xây dựng phần Detailed Findings Summary (Section 4) - TIÊU ĐỀ TIẾNG ANH
                         detailedFindingsSection += `
@@ -1966,7 +1968,7 @@ ${allClauseSummary}
 BỐ CỤC CÁC PHÁT HIỆN ĐƯỢC CHỌN (NOTE: The content in this section is already the final English narrative from the Auditor's review block. DO NOT translate, just insert it into the final report structure):
 ${detailedFindingsSection || "--- NO FINDINGS SELECTED ---"}
 
-REPORT STRUCTURE (Output as clean plain text, use simple line breaks for paragraphs. DO NOT USE ANY MARKDOWN SYNTAX or QUOTATION MARKS in the main report headers or body text):
+REPORT STRUCTURE (Output as clean plain text, use simple line breaks for paragraphs. DO NOT USE ANY MARKDOWN SYNTAX or QUOTATION MARKS in the main report headers or body body):
 
 --- FINAL ISO AUDIT REPORT: ${standard || 'N/A'} - ${auditInfo.type || 'N/A'} ---
 AUDIT CONTEXT:
